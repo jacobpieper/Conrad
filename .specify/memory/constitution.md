@@ -1,77 +1,30 @@
-<!--
-Sync Impact Report
-Version change: template (unversioned) → 1.0.0
-Modified principles: N/A (initial ratification)
-Added sections:
-  - I. Data-Oriented Memory (Core Engine)
-  - II. Architecture & Pipeline Modularity
-  - III. UI & Styling Standards
-  - IV. Testing & Benchmarking
-  - V. Code & Governance Standards
-  - Governance
-Removed sections: [SECTION_2_NAME], [SECTION_3_NAME] placeholders (not required; all
-  constraints consolidated into the five Core Principles above)
-Follow-up TODOs: none
--->
 # Conrad Constitution
 
 ## Core Principles
 
 ### I. Data-Oriented Memory (Core Engine)
-Zero heap allocations are permitted inside the render loop, projection loop, or any hot
-physics loop; all per-frame work MUST reuse pre-allocated buffers. Spatial transforms,
-physics state, and geometry buffers MUST be represented exclusively as flat TypedArrays
-(`Float32Array`, `Uint32Array`). OOP entity classes for simulation data are FORBIDDEN —
-simulation data MUST be modeled as pure TypeScript interfaces operating on packed buffers
-via pure procedural functions, never methods on stateful objects. All core simulation
-state MUST be laid out for zero-copy transfer (`SharedArrayBuffer` or transferable
-`ArrayBuffer`) across Web Workers; no structure may require serialization or deep-copying
-to cross a worker boundary.
+Zero heap allocations are permitted inside the render loop, blending pipeline, raycasting loop, or any hot pixel-processing loop; all per-frame work MUST reuse pre-allocated buffers. Pixel buffers, image data, convolution kernels, and blending states MUST be represented exclusively as flat TypedArrays (`Uint8Array`, `Uint16Array`, `Float32Array`). OOP entity classes for image data and spatial physics are FORBIDDEN — simulation and processing MUST be modeled as pure interfaces operating on packed buffers via pure procedural functions, never methods on stateful objects. All core rendering state MUST be laid out for zero-copy transfer (`SharedArrayBuffer` or transferable `ArrayBuffer`) across Web Workers.
 
 ### II. Architecture & Pipeline Modularity
-The engine MUST be built as decoupled, single-purpose modules, each a set of pure
-functions operating on typed arrays. Modules MUST be composed into explicit, sequential
-data pipelines — monolithic simulation blocks are FORBIDDEN. Every module MUST declare
-its inputs and outputs as strict buffer contracts (shape, stride, and type). The core
-physics and math engine MUST NOT import Svelte reactivity (`$state`, `$derived`, stores)
-or any DOM binding; the engine NEVER depends on the UI layer — it only outputs raw
-buffers, and SvelteKit components consume and orchestrate them. The engine MUST use a
-right-handed, Y-up, -Z-forward coordinate system with explicit column-major matrix
-conventions throughout; mixed or implicit conventions are FORBIDDEN.
+The engine MUST be built as decoupled, single-purpose modules composed into explicit, sequential pipelines — monolithic processing blocks are FORBIDDEN. Every module MUST declare its inputs and outputs as strict buffer contracts. 
+**Strict Client-Side Execution (Core Engine):** The interactive simulation MUST run entirely client-side within the browser. The engine MUST use native browser APIs (WebGPU, Canvas) via TypeScript or WebAssembly. Server-side simulation, remote rendering, or reliance on a backend compute API for the live application is strictly FORBIDDEN. 
+**Backend & Asset Tooling Exemption:** Offline tools, asset pipelines, and backend generation scripts (e.g., pre-rendering 2D radiographs from 3D models) are EXEMPT from the client-side execution rule. These tools are strictly for developer use during build or asset preparation. The final web application accessed by end users MUST remain 100% client-side with zero backend compute dependencies. Developer tools may execute via CLI or local backend, and may utilize any appropriate runtime, language, or native binary (e.g., Rust, Node, Python, C++).
+**Spatial and Projection Rules:** The engine MUST support 3D spatial math, linear algebra, and volumetric data (e.g., raycasting, 3D transforms) necessary to project 3D models into 2D radiographic images. When outputting or processing the final 2D pixel buffers, the engine MUST treat coordinates as 2D grids (origin top-left) with explicit row-major flat array indexing. Pipelines MUST default to single-channel (grayscale) logic unless an alpha or color channel is explicitly required.
 
-### III. UI & Styling Standards
-SvelteKit is the sole UI framework. Styling MUST use pure vanilla CSS scoped within
-Svelte `<style>` tags or standard `.css` files. Tailwind, Sass, Less, styled-components,
-and any other CSS abstraction or utility framework are FORBIDDEN.
+### III. UI & Interactivity Standards
+SvelteKit is the sole UI framework. The core math and pixel engine MUST NOT import Svelte reactivity (`$state`, `$derived`, stores) or any DOM binding; the engine NEVER depends on the UI layer — it only outputs raw buffers, and SvelteKit components consume and render them. Styling MUST use pure vanilla CSS scoped within Svelte `<style>` tags or standard `.css` files. Tailwind, Sass, Less, styled-components, and any other CSS abstraction or utility framework are FORBIDDEN.
 
 ### IV. Testing & Benchmarking
-Every mathematical and procedural pipeline MUST have unit tests, written exclusively with
-`vitest`; importing any other testing framework is FORBIDDEN. Hot loops MUST include
-benchmark tests that assert execution time budgets and strictly prove zero memory
-allocations during execution. Mock objects are FORBIDDEN for core math tests — tests
-MUST exercise real array buffer inputs and assert on real array buffer outputs.
+Every mathematical, spatial, and pixel manipulation pipeline MUST have unit tests, written exclusively with `vitest`; importing any other testing framework is FORBIDDEN. Hot loops MUST include benchmark tests that assert execution time budgets and strictly prove zero memory allocations during execution. Mock objects are FORBIDDEN for core math tests — tests MUST exercise real array buffer inputs and assert on real array buffer outputs.
 
-### V. Code & Governance Standards
-TypeScript MUST be used in strict mode: `any`, `@ts-ignore`, and implicit casts are
-FORBIDDEN. Statements MUST NOT be terminated with semicolons; a clean, modern,
-semicolon-free style is enforced throughout the codebase. Commit messages MUST follow
-Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, etc.). Commit 
-subject lines MUST be concise (under 50 characters). FORBIDDEN to generate overly verbose 
-or multi-clause commit messages. Code MUST pass all linting and strict type-checking 
-before it may be committed.
+### V. Code, Git & Governance Standards
+TypeScript MUST be used in strict mode: `any`, `@ts-ignore`, and implicit casts are FORBIDDEN. Statements MUST NOT be terminated with semicolons; a clean, modern, semicolon-free style is enforced throughout the codebase. Environment and Node version management MUST use `fnm`. The AI agent MUST autonomously stage and commit its own changes using `git` upon completing a working task or logical milestone; expecting or instructing the user to run `git add` or `git commit` manually is strictly FORBIDDEN. Commit messages MUST follow Conventional Commits (`feat:`, `fix:`, `chore:`, etc.). Commit subject lines MUST be concise (under 50 characters). FORBIDDEN to generate overly verbose or multi-clause commit messages. 
+
+### VI. The "Halt and Catch Fire" Rule
+If an AI agent cannot solve a problem without violating the zero-allocation rule, introducing OOP, or breaking the pure-function buffer constraints, it MUST halt, refuse to generate the code, and flag the architectural roadblock for human review. Silently breaking a core principle to force a working solution is strictly FORBIDDEN.
 
 ## Governance
 
-This constitution supersedes all other project practices, style guides, and prior
-conventions. Any conflict between this document and other guidance MUST be resolved in
-favor of this constitution. Amendments require: (1) a documented rationale for the
-change, (2) an explicit version bump following semantic versioning — MAJOR for backward
-incompatible principle removals or redefinitions, MINOR for new principles or materially
-expanded guidance, PATCH for clarifications and wording fixes — and (3) a migration note
-for any affected code when applicable. All pull requests and code reviews MUST verify
-compliance with every Core Principle; any deviation MUST be justified in the review and
-either rejected or captured as a follow-up amendment. Complexity that violates a
-principle (e.g., an allocation in a hot loop, a non-vanilla CSS dependency) MUST be
-rejected rather than waived.
+This constitution supersedes all other project practices, style guides, and prior conventions. Any conflict between this document and other guidance MUST be resolved in favor of this constitution. Amendments require: (1) a documented rationale for the change, (2) an explicit version bump following semantic versioning, and (3) a migration note for any affected code when applicable. All pull requests and code reviews MUST verify compliance with every Core Principle. Complexity that violates a principle MUST be rejected rather than waived.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-21 | **Last Amended**: 2026-10-21
+**Version**: 1.1.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22
