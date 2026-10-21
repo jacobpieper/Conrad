@@ -198,6 +198,12 @@ describe('cross-origin loading', () => {
       reason: 'network'
     } satisfies Partial<ImageLoadError>)
   })
+
+  it('rejects with a network error when the connection drops mid-download', async () => {
+    await expect(loadImageFromUrl(`${inject('crossOriginBaseUrl')}/truncated.png`)).rejects.toMatchObject({
+      reason: 'network'
+    } satisfies Partial<ImageLoadError>)
+  })
 })
 
 describe('mislabelled image bytes', () => {

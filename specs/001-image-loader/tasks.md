@@ -241,3 +241,9 @@ With multiple developers:
 
 - [X] T044 Guard the canvas creation, `getImageData` readback and `toGrayscale` allocation in `src/core/image-loader/load-image.ts` so any failure (for example an out-of-memory `RangeError`) surfaces as `ImageLoadError(reason: 'decode-failed')`, close the `ImageBitmap` in a `finally`, and add a test that a failing readback rejects with an `ImageLoadError` per Edge Cases (very large image), FR-008 (partial)
 - [X] T045 Remove the unused `LoadImageOptions` type and the `fixtures/` image directory entry from the plan source tree in `specs/001-image-loader/plan.md`, and record `fixtures.ts` and `tests/setup/` instead, per plan: project structure (partial)
+
+---
+
+## Phase 10: Convergence
+
+- [X] T046 Move the `response.blob()` body read in `loadImageFromUrl` (`src/core/image-loader/load-image.ts`) inside a guard that throws `ImageLoadError(reason: 'network')` when the body cannot be read, so a mid-download failure is not a raw `TypeError`, per FR-008, contracts: `loadImageFromUrl` errors (partial)

@@ -59,7 +59,12 @@ export async function loadImageFromUrl(url: string): Promise<GrayscaleImage> {
     throw new ImageLoadError('network', `Image URL responded with status ${response.status}: ${url}`)
   }
 
-  const blob = await response.blob()
+  let blob: Blob
+  try {
+    blob = await response.blob()
+  } catch (cause) {
+    throw new ImageLoadError('network', `Failed to read image data from URL: ${url}`, cause)
+  }
   return decodeBlob(blob)
 }
 

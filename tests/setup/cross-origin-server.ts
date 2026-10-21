@@ -11,9 +11,19 @@ declare module 'vitest' {
 
 const png = Buffer.from(TEST_PNG_DATA_URI.split(',')[1] as string, 'base64')
 
-// Serves the same PNG from a second origin: /open.png allows CORS, /blocked.png does not.
+// Serves the same PNG from a second origin: /open.png allows CORS, /blocked.png does not,
+// and /truncated.png advertises the full length then drops the connection mid-body.
 export default async function setup(project: TestProject) {
   const server = createServer((req, res) => {
+    if (req.url === '/truncated.png') {
+      res.writeHead(200, {
+        'Content-Type': 'image/png',
+        'Content-Length': String(png.length),
+        'Access-Control-Allow-Origin': '*'
+      })
+      res.write(png.subarray(0, 8), () => res.socket?.destroy())
+      return
+    }
     const headers: Record<string, string> = { 'Content-Type': 'image/png' }
     if (req.url === '/open.png') headers['Access-Control-Allow-Origin'] = '*'
     res.writeHead(200, headers)
