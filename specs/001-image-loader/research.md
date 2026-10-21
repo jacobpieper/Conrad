@@ -18,9 +18,9 @@ All Technical Context items were resolvable from the constitution and standard w
 
 ## Decision: Format/validity detection via decode success, not file extension or manual byte sniffing
 
-- **Decision**: Attempt decode via `createImageBitmap`; if it rejects (or the fetch/read fails), surface a typed `ImageLoadError` with a reason (`network`, `unsupported-format`, `decode-failed`, `empty-input`). Do not pre-validate by inspecting magic bytes or trusting file extensions/MIME type strings, since the browser decoder is authoritative.
-- **Rationale**: Avoids duplicating format-sniffing logic the browser already performs correctly and keeps the module simple; aligns with FR-008's requirement for descriptive failures without over-engineering validation.
-- **Alternatives considered**: Manual magic-byte sniffing (PNG `\x89PNG`, JPEG `\xFF\xD8`, WebP `RIFF....WEBP`) prior to decode — rejected as redundant extra code path that must be kept in sync with decoder behavior for no added correctness.
+- **Decision**: Wrap `createImageBitmap` in a single try/catch; if it rejects for any reason, surface one generic `ImageLoadError(reason: 'decode-failed', message: 'Image decoding failed')`. Do not pre-validate or classify by inspecting magic bytes, file extensions, or MIME type strings, and do not attempt to distinguish "unsupported format" from "corrupted data" — the browser decoder is authoritative and a single generic reason is sufficient.
+- **Rationale**: Avoids duplicating format-sniffing/classification logic the browser already performs correctly and keeps the module minimal; aligns with FR-008's requirement for a descriptive failure without over-engineering validation or error taxonomy.
+- **Alternatives considered**: Manual magic-byte sniffing (PNG `\x89PNG`, JPEG `\xFF\xD8`, WebP `RIFF....WEBP`) prior to decode, or classifying failures into separate `unsupported-format`/`decode-failed` reasons — rejected as redundant extra code paths that must be kept in sync with decoder behavior for no added correctness.
 
 ## Decision: Testing strategy — Vitest Browser Mode with real fixture images
 

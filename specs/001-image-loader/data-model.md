@@ -37,7 +37,7 @@ The result of an unsuccessful load (FR-008).
 
 | Field | Type | Notes |
 |---|---|---|
-| `reason` | `'network' \| 'empty-input' \| 'unsupported-format' \| 'decode-failed' \| 'cors-blocked'` | Machine-readable failure category |
+| `reason` | `'network' \| 'empty-input' \| 'decode-failed' \| 'cors-blocked'` | Machine-readable failure category |
 | `message` | `string` | Human-readable, descriptive explanation suitable for developer-facing logs/errors |
 | `cause` | `unknown` (optional) | Underlying error/exception, if any, for debugging |
 

@@ -37,7 +37,7 @@ npx vitest run tests/unit/image-loader
 ### Scenario 3 — Reject invalid input (User Story 3)
 
 - Call `loadImageFromBlob(new Blob([]))` (empty blob) → expect a rejected `ImageLoadError` with `reason: 'empty-input'`.
-- Call `loadImageFromBlob(new Blob(['not an image']))` → expect a rejected `ImageLoadError` with `reason: 'decode-failed'` or `'unsupported-format'`.
+- Call `loadImageFromBlob(new Blob(['not an image']))` → expect a rejected `ImageLoadError` with `reason: 'decode-failed'` and a generic "Image decoding failed" message (no format-specific classification).
 - Call `loadImageFromUrl('https://example.invalid/missing.png')` → expect a rejected `ImageLoadError` with `reason: 'network'`.
 
 ### Scenario 4 — Performance spot-check (SC-001)

@@ -14,7 +14,6 @@ type GrayscaleImage = {
 type ImageLoadErrorReason =
   | 'network'
   | 'empty-input'
-  | 'unsupported-format'
   | 'decode-failed'
   | 'cors-blocked'
 
