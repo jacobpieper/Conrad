@@ -54,7 +54,7 @@ A developer passes a URL or Blob that is not a valid, supported image (e.g., cor
 **Acceptance Scenarios**:
 
 1. **Given** a Blob or URL containing corrupted image bytes, **When** the image load is attempted, **Then** the system reports a descriptive failure.
-2. **Given** a Blob or URL containing a file of an unsupported image format, **When** the image load is attempted, **Then** the system reports a descriptive failure identifying the format is unsupported.
+2. **Given** a Blob or URL containing a file of an unsupported image format, **When** the image load is attempted, **Then** the system reports the same generic image decoding failure used for corrupted image data, without attempting to distinguish the cause.
 3. **Given** a Blob or URL containing non-image content (e.g., a text file), **When** the image load is attempted, **Then** the system reports a descriptive failure rather than returning a buffer.
 
 ---
@@ -103,6 +103,6 @@ A developer passes a URL or Blob that is not a valid, supported image (e.g., cor
 - A standard, industry-recognized luminance weighting (e.g., ITU-R BT.601 or BT.709 style) is an acceptable default for RGB-to-grayscale conversion.
 - Grayscale output uses 8-bit precision (0–255) per pixel, consistent with typical web image bit depth.
 - Cross-origin URLs are subject to the browser's existing CORS security model; the loader cannot bypass CORS restrictions, and a blocked cross-origin load is treated as a failure.
-- Animated image formats only need their first/default frame extracted; full frame-by-frame animation decoding is out of scope.
+- Animated image formats only need their first/default frame extracted; full frame-by-frame animation decoding is out of scope. This is a guarantee of the browser's native decoder, so it has no dedicated test.
 - This module runs entirely client-side within the browser, consistent with the engine's client-side execution requirement.
 - Image resizing, cropping, or other pre-processing beyond grayscale flattening is out of scope for this module.

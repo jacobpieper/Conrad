@@ -2,6 +2,8 @@ import type { GrayscaleImage, ImageSource } from './types'
 import { ImageLoadError } from './errors'
 import { toGrayscale } from './to-grayscale'
 
+type PixelContext = Pick<CanvasRenderingContext2D, 'drawImage' | 'getImageData'>
+
 async function decodeBlob(blob: Blob): Promise<GrayscaleImage> {
   if (blob.size === 0) {
     throw new ImageLoadError('empty-input', 'Cannot load an empty (zero-byte) image source')
@@ -15,26 +17,33 @@ async function decodeBlob(blob: Blob): Promise<GrayscaleImage> {
   }
 
   const { width, height } = bitmap
-  const canvas = new OffscreenCanvas(width, height)
-  const ctx = canvas.getContext('2d')
+  let ctx: PixelContext | null
+  if (typeof OffscreenCanvas === 'undefined') {
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    ctx = canvas.getContext('2d')
+  } else {
+    const canvas = new OffscreenCanvas(width, height)
+    ctx = canvas.getContext('2d')
+  }
   if (!ctx) {
     throw new ImageLoadError('decode-failed', 'Failed to acquire a 2D canvas context for pixel readback')
   }
   ctx.drawImage(bitmap, 0, 0)
   bitmap.close()
 
-  let imageData: ImageData
-  try {
-    imageData = ctx.getImageData(0, 0, width, height)
-  } catch (cause) {
-    throw new ImageLoadError('cors-blocked', 'Cannot read pixel data from a cross-origin image without permissive CORS headers', cause)
-  }
+  const imageData = ctx.getImageData(0, 0, width, height)
 
   const data = toGrayscale(imageData.data, width, height)
   return { width, height, data }
 }
 
 export async function loadImageFromUrl(url: string): Promise<GrayscaleImage> {
+  if (url.length === 0) {
+    throw new ImageLoadError('empty-input', 'Cannot load an image from an empty URL')
+  }
+
   let response: Response
   try {
     response = await fetch(url)

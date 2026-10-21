@@ -210,3 +210,27 @@ With multiple developers:
 - Verify tests fail before implementing
 - Commit after each task or logical group, per constitution Principle V (the AI agent commits autonomously using Conventional Commits)
 - Stop at any checkpoint to validate a story independently
+
+---
+
+## Phase 7: Convergence
+
+- [X] T030 Extend `load-image.test.ts` to exercise PNG plus browser-encoded JPEG and WebP inputs derived from the required PNG data URI, verifying all three supported formats decode to correctly sized grayscale buffers per FR-003, SC-002 (partial)
+- [X] T031 Reconcile the generic `decode-failed` behavior with US3/AC2 by updating `spec.md` to state unsupported formats use the same generic decode failure as corrupted image data (contradicts)
+- [X] T032 Add an `HTMLCanvasElement` + `<canvas>` fallback in `src/core/image-loader/load-image.ts` when `OffscreenCanvas` is unavailable per research.md Decision 1 (missing)
+- [X] T033 Add an automated 1920×1080 decode-and-convert timing test asserting completion under one second in `tests/unit/image-loader/load-image.test.ts` per SC-001 (partial)
+- [X] T034 ~~Add a test fixture and assertion verifying an animated image source decodes only its first/default frame~~ — superseded by T040: recorded as a native-decoder guarantee in spec.md Assumptions
+- [X] T035 Add explicit validation in `loadImageFromUrl` rejecting an empty URL string with `ImageLoadError(reason: 'empty-input')` in `src/core/image-loader/load-image.ts` per data-model.md `ImageSource` validation rules (partial)
+- [X] T036 ~~Add a test exercising the `cors-blocked` failure path~~ — superseded by T041: the branch was unreachable and was removed
+
+---
+
+## Phase 8: Convergence
+
+- [X] T037 CRITICAL: Add a heap-allocation assertion to `tests/unit/image-loader/to-grayscale.bench.ts` that proves `toGrayscale` allocates nothing when given a pre-sized `out` buffer (for example a precise heap measurement around many iterations), not just that the same buffer is returned, per Constitution IV (partial)
+- [X] T038 Add a loader-level test in `tests/unit/image-loader/load-image.test.ts` that draws a 2x2 red/green/blue/white canvas, encodes it as PNG, loads it, and asserts the buffer is `[76, 150, 29, 255]` in row-major, top-left order per FR-005, SC-004 (partial)
+- [X] T039 Add a test in `tests/unit/image-loader/load-image.test.ts` that loads a semi-transparent pixel and asserts alpha is discarded in the grayscale value per FR-007 (partial)
+- [X] T040 Resolve T034: first-frame-only (FR-009) cannot be verified with the static fixture, so either obtain an animated WebP data URI to assert only the first frame is returned, or amend FR-009 and T026 to record it as a documented platform guarantee with no dedicated test (partial)
+- [X] T041 Supersede T036: remove the unreachable `cors-blocked` reason and `getImageData` catch branch from `src/core/image-loader/errors.ts`, `src/core/image-loader/load-image.ts`, and the contracts/data-model docs, and test that a real cross-origin fetch blocked by CORS rejects with `ImageLoadError(reason: 'network')` per Edge Cases, FR-001 (unrequested)
+- [X] T042 Commit the convergence changes with a Conventional Commit message per Constitution V (missing)
+- [X] T043 Add `.vitest/` to `.gitignore` (unrequested)

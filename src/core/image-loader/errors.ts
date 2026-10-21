@@ -2,7 +2,6 @@ export type ImageLoadErrorReason =
   | 'network'
   | 'empty-input'
   | 'decode-failed'
-  | 'cors-blocked'
 
 export class ImageLoadError extends Error {
   readonly reason: ImageLoadErrorReason

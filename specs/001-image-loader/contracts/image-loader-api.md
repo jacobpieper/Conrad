@@ -15,7 +15,6 @@ type ImageLoadErrorReason =
   | 'network'
   | 'empty-input'
   | 'decode-failed'
-  | 'cors-blocked'
 
 class ImageLoadError extends Error {
   readonly reason: ImageLoadErrorReason
@@ -31,7 +30,7 @@ class ImageLoadError extends Error {
 
 - **Input**: a URL string (absolute, relative, or `data:`).
 - **Output**: resolves with a `GrayscaleImage` on success.
-- **Errors**: rejects with `ImageLoadError` on network failure, empty response, unsupported/corrupt format, decode failure, or CORS-blocked pixel access.
+- **Errors**: rejects with `ImageLoadError` on network failure, empty response, unsupported/corrupt format, decode failure, or a cross-origin fetch blocked by CORS (reported as `network`).
 - **Covers**: FR-001, FR-003–FR-009, User Story 1.
 
 ### `loadImageFromBlob(blob: Blob): Promise<GrayscaleImage>`
