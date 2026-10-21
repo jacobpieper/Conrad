@@ -200,6 +200,17 @@ describe('cross-origin loading', () => {
   })
 })
 
+describe('mislabelled image bytes', () => {
+  it('rejects with an ImageLoadError for a tiny non-image Blob typed as image/png', async () => {
+    const blob = new Blob(['not an image'], { type: 'image/png' })
+
+    await expect(loadImageFromBlob(blob)).rejects.toMatchObject({
+      reason: 'decode-failed',
+      message: 'Image decoding failed'
+    } satisfies Partial<ImageLoadError>)
+  })
+})
+
 describe('large image performance', () => {
   it('decodes and converts a 1920x1080 image in under one second', async () => {
     const source = await createImageBitmap(dataUriToBlob(TEST_PNG_DATA_URI))

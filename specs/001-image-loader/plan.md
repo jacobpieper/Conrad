@@ -67,15 +67,18 @@ src/
 │       ├── load-image.ts       # URL/Blob -> decoded ImageBitmap/ImageData orchestration
 │       ├── to-grayscale.ts     # Pure RGBA buffer -> single-channel Uint8Array conversion
 │       ├── errors.ts           # ImageLoadError and failure reasons
-│       └── types.ts            # ImageSource, GrayscaleImage, LoadImageOptions
+│       └── types.ts            # ImageSource, GrayscaleImage
 └── (future core modules alongside image-loader, e.g. convolution/, raycasting/)
 
 tests/
+├── setup/
+│   └── cross-origin-server.ts  # Real local server for cross-origin load tests
 └── unit/
     └── image-loader/
         ├── load-image.test.ts
         ├── to-grayscale.test.ts
-        └── fixtures/            # small real PNG/JPEG/WebP test images
+        ├── to-grayscale.bench.ts
+        └── fixtures.ts          # Hardcoded base64 PNG data URIs
 ```
 
 **Structure Decision**: This is the first feature in the repository, so it establishes the initial `src/core/` layout for engine modules. The Image Loader lives at `src/core/image-loader/` as a self-contained, dependency-free module (buffer-in/buffer-out), matching Option 1 (single project). Tests live under `tests/unit/image-loader/` using real fixture image files, consistent with the no-mocks testing principle. The SvelteKit UI layer (not yet scaffolded) will later import from `src/core/image-loader` without this module ever importing back from a UI directory.

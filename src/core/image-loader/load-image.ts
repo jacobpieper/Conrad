@@ -17,26 +17,31 @@ async function decodeBlob(blob: Blob): Promise<GrayscaleImage> {
   }
 
   const { width, height } = bitmap
-  let ctx: PixelContext | null
-  if (typeof OffscreenCanvas === 'undefined') {
-    const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
-    ctx = canvas.getContext('2d')
-  } else {
-    const canvas = new OffscreenCanvas(width, height)
-    ctx = canvas.getContext('2d')
-  }
-  if (!ctx) {
-    throw new ImageLoadError('decode-failed', 'Failed to acquire a 2D canvas context for pixel readback')
-  }
-  ctx.drawImage(bitmap, 0, 0)
-  bitmap.close()
+  try {
+    let ctx: PixelContext | null
+    if (typeof OffscreenCanvas === 'undefined') {
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      ctx = canvas.getContext('2d')
+    } else {
+      const canvas = new OffscreenCanvas(width, height)
+      ctx = canvas.getContext('2d')
+    }
+    if (!ctx) {
+      throw new ImageLoadError('decode-failed', 'Failed to acquire a 2D canvas context for pixel readback')
+    }
+    ctx.drawImage(bitmap, 0, 0)
 
-  const imageData = ctx.getImageData(0, 0, width, height)
-
-  const data = toGrayscale(imageData.data, width, height)
-  return { width, height, data }
+    const imageData = ctx.getImageData(0, 0, width, height)
+    const data = toGrayscale(imageData.data, width, height)
+    return { width, height, data }
+  } catch (cause) {
+    if (cause instanceof ImageLoadError) throw cause
+    throw new ImageLoadError('decode-failed', 'Image pixel extraction failed', cause)
+  } finally {
+    bitmap.close()
+  }
 }
 
 export async function loadImageFromUrl(url: string): Promise<GrayscaleImage> {

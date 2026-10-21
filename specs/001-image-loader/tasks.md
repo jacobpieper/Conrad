@@ -234,3 +234,10 @@ With multiple developers:
 - [X] T041 Supersede T036: remove the unreachable `cors-blocked` reason and `getImageData` catch branch from `src/core/image-loader/errors.ts`, `src/core/image-loader/load-image.ts`, and the contracts/data-model docs, and test that a real cross-origin fetch blocked by CORS rejects with `ImageLoadError(reason: 'network')` per Edge Cases, FR-001 (unrequested)
 - [X] T042 Commit the convergence changes with a Conventional Commit message per Constitution V (missing)
 - [X] T043 Add `.vitest/` to `.gitignore` (unrequested)
+
+---
+
+## Phase 9: Convergence
+
+- [X] T044 Guard the canvas creation, `getImageData` readback and `toGrayscale` allocation in `src/core/image-loader/load-image.ts` so any failure (for example an out-of-memory `RangeError`) surfaces as `ImageLoadError(reason: 'decode-failed')`, close the `ImageBitmap` in a `finally`, and add a test that a failing readback rejects with an `ImageLoadError` per Edge Cases (very large image), FR-008 (partial)
+- [X] T045 Remove the unused `LoadImageOptions` type and the `fixtures/` image directory entry from the plan source tree in `specs/001-image-loader/plan.md`, and record `fixtures.ts` and `tests/setup/` instead, per plan: project structure (partial)
