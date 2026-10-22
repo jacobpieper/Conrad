@@ -117,9 +117,9 @@ Single project (per [plan.md](./plan.md) Structure Decision): `src/core/headless
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T019 [P] Add `tests/unit/headless-renderer/update-buffer.bench.ts`, following the heap-growth pattern in `tests/unit/image-loader/to-grayscale.bench.ts` (including its control that must register): at a 1920x1080 viewport and image, `updateBuffer` plus `await device.queue.onSubmittedWorkDone()` completes under 50 ms (SC-006); repeated `updateBuffer` at constant size shows JS heap growth below a small threshold (SC-005) (depends on T013)
-- [ ] T020 [P] Run `npm run typecheck` and `npm run lint` and fix findings in `src/core/headless-renderer/` and `tests/unit/headless-renderer/` (no semicolons, no `any`, no `@ts-ignore`) (depends on T018)
-- [ ] T021 Run `npx vitest run tests/unit/headless-renderer` plus the full `npm test`, and walk through every scenario in [quickstart.md](./quickstart.md); confirm `src/core/headless-renderer/` contains exactly the 4 planned files and imports no Svelte or `document`/`window` APIs (depends on T019, T020)
+- [X] T019 [P] Add `tests/unit/headless-renderer/update-buffer.bench.ts`, following the heap-growth pattern in `tests/unit/image-loader/to-grayscale.bench.ts` (including its control that must register): at a 1920x1080 viewport and image, `updateBuffer` plus `await device.queue.onSubmittedWorkDone()` completes under 50 ms (SC-006); repeated `updateBuffer` at constant size shows JS heap growth below a small threshold (SC-005) (depends on T013)
+- [X] T020 [P] Run `npm run typecheck` and `npm run lint` and fix findings in `src/core/headless-renderer/` and `tests/unit/headless-renderer/` (no semicolons, no `any`, no `@ts-ignore`) (depends on T018)
+- [ ] T021 Run `npx vitest run tests/unit/headless-renderer` plus the full `npm test`, and walk through every scenario in [quickstart.md](./quickstart.md); confirm `src/core/headless-renderer/` contains exactly the 4 planned files and imports no Svelte or `document`/`window` APIs (depends on T019, T020). Partial: typecheck, lint, 42 tests, and the four-file/framework-boundary checks pass; 2 canvas target tests fail with `A valid external Instance reference no longer exists` in headless Chromium/SwiftShader, reproduced by a minimal canvas submission probe.
 
 ---
 
