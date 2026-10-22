@@ -60,8 +60,8 @@ All Technical Context items are resolved; there are no open NEEDS CLARIFICATION 
 
 ## R10. Test environment
 
-- **Decision**: Keep Vitest Browser Mode on Playwright Chromium. `launchOptions.args` includes `--enable-unsafe-webgpu`, `--use-webgpu-adapter=swiftshader`, and `--use-angle=swiftshader` (alongside `--enable-precise-memory-info`). Confirmed by a real Browser Mode probe: both `navigator.gpu.requestAdapter()` and `OffscreenCanvas(1, 1).getContext('webgpu')` returned non-null.
-- **Presented-canvas verification**: Use an `OffscreenCanvas`, then `transferToImageBitmap()` and draw into a 2D canvas to read pixels, comparing against `readSurface` output. This verifies the real presentation path without mocks.
+- **Decision**: Keep Vitest Browser Mode on Playwright Chromium. `launchOptions.args` includes `--enable-unsafe-webgpu`, `--enable-features=Vulkan`, and `--use-angle=vulkan` (alongside `--enable-precise-memory-info`). A real canvas render/copy probe passes with Vulkan; SwiftShader and default ANGLE fail on canvas submissions with `A valid external Instance reference no longer exists`.
+- **Presented-canvas verification**: Use an `OffscreenCanvas`, draw it into a 2D `OffscreenCanvas`, and read `getImageData`, comparing against `readSurface` output. This verifies the real presentation path without mocks.
 - **Types**: `@webgpu/types` added as a dev dependency and listed in `tsconfig.json` `types`.
 
 ## R11. Zero-copy / worker readiness (Principle I)

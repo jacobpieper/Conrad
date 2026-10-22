@@ -7,7 +7,7 @@ This guide proves the renderer works end-to-end once implemented. See [contracts
 - Node.js via `fnm` (per constitution).
 - Dependencies installed, including the dev-only `@webgpu/types`.
 - Playwright Chromium installed (`npx playwright install chromium`).
-- `vitest.config.ts` Chromium launch args include `--enable-unsafe-webgpu`, `--use-webgpu-adapter=swiftshader`, and `--use-angle=swiftshader` (confirmed by a real adapter/context probe; see research R10).
+- `vitest.config.ts` Chromium launch args include `--enable-unsafe-webgpu`, `--enable-features=Vulkan`, and `--use-angle=vulkan` (real canvas submissions require this backend in the test environment; see research R10).
 
 ## Setup
 
@@ -40,7 +40,7 @@ npm run lint
 ### Scenario 3 - Presentation target (User Story 3)
 
 - Without a target, all of the above works (no canvas in the test).
-- `bindTarget(state, new OffscreenCanvas(1, 1))` -> canvas gets the viewport size; capture via `transferToImageBitmap()` into a 2D canvas and compare to `readSurface`.
+- `bindTarget(state, new OffscreenCanvas(1, 1))` -> canvas gets the viewport size; draw the canvas into a 2D `OffscreenCanvas`, read `getImageData`, and compare to `readSurface`.
 - `updateBuffer` and `resize` while bound -> target matches the surface each time.
 - `unbindTarget`, then `updateBuffer` -> the surface changes; the former target is not updated.
 

@@ -249,7 +249,7 @@ export function bindTarget(
     alphaMode: 'opaque',
     usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_DST
   })
-  state.target?.context.unconfigure()
+  if (state.target?.context !== context) state.target?.context.unconfigure()
   state.target = { canvas, context }
   render(state)
 }

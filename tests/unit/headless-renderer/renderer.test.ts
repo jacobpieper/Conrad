@@ -279,4 +279,21 @@ describe('headless renderer image updates', () => {
     updateBuffer(renderer, image(2, 2, new Uint8Array([30, 80, 130, 180])))
     expect(await canvasPixels(activeCanvas)).not.toEqual(previousPixels)
   })
+
+  it('keeps presenting when rebinding the same canvas', async () => {
+    const renderer = await create(2, 2)
+    const canvas = new OffscreenCanvas(1, 1)
+    bindTarget(renderer, canvas)
+    updateBuffer(renderer, image(2, 2, new Uint8Array([10, 50, 90, 130])))
+
+    bindTarget(renderer, canvas)
+    expect(await canvasPixels(canvas)).toEqual(await surface(renderer))
+
+    const nextImage = image(2, 2, new Uint8Array([40, 80, 120, 160]))
+    updateBuffer(renderer, nextImage)
+    expect(await canvasPixels(canvas)).toEqual(await surface(renderer))
+
+    resize(renderer, 3, 3)
+    expect(await canvasPixels(canvas)).toEqual(await surface(renderer))
+  })
 })
