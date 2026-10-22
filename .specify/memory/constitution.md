@@ -1,3 +1,13 @@
+<!--
+Sync Impact Report
+- Version change: 1.1.0 -> 1.2.0 (MINOR: new principle added)
+- Modified principles: none
+- Added sections: VII. Scope & Simplicity Constraints (scope, fail-fast errors,
+  browser target floor, zero shims)
+- Removed sections: none
+- Follow-up TODOs: none
+-->
+
 # Conrad Constitution
 
 ## Core Principles
@@ -23,8 +33,15 @@ TypeScript MUST be used in strict mode: `any`, `@ts-ignore`, and implicit casts 
 ### VI. The "Halt and Catch Fire" Rule
 If an AI agent cannot solve a problem without violating the zero-allocation rule, introducing OOP, or breaking the pure-function buffer constraints, it MUST halt, refuse to generate the code, and flag the architectural roadblock for human review. Silently breaking a core principle to force a working solution is strictly FORBIDDEN.
 
+### VII. Scope & Simplicity Constraints
+These constraints exist to prevent over-engineering and apply to all code, specs, and plans.
+- **Scope:** This is a personal project MVP; design for the 90% case. Enterprise architecture bloat (dependency-injection frameworks, plugin systems, abstract factory layers, speculative extensibility points, configuration frameworks) is strictly FORBIDDEN.
+- **Error handling:** Strict fail fast. Errors MUST be thrown or surfaced immediately at the failing call. Retry loops, diagnostic heuristics, and header/content sniffing to classify failures are FORBIDDEN; native browser API results MUST be trusted.
+- **Target floor:** The supported browser minimums are pinned: Chrome 120+, Firefox 125+, Safari 18+. Code MAY use any API available in all three without qualification, and MUST NOT target older versions.
+- **Zero shims:** Polyfills, fallbacks, and scattered inline feature checks (e.g., `if ('x' in window)`) are FORBIDDEN in application code. The target floor is the only compatibility contract.
+
 ## Governance
 
 This constitution supersedes all other project practices, style guides, and prior conventions. Any conflict between this document and other guidance MUST be resolved in favor of this constitution. Amendments require: (1) a documented rationale for the change, (2) an explicit version bump following semantic versioning, and (3) a migration note for any affected code when applicable. All pull requests and code reviews MUST verify compliance with every Core Principle. Complexity that violates a principle MUST be rejected rather than waived.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22
+**Version**: 1.2.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22
