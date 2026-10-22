@@ -7,7 +7,7 @@ This guide proves the renderer works end-to-end once implemented. See [contracts
 - Node.js via `fnm` (per constitution).
 - Dependencies installed, including the dev-only `@webgpu/types`.
 - Playwright Chromium installed (`npx playwright install chromium`).
-- `vitest.config.ts` Chromium launch args extended so headless Chromium exposes a WebGPU adapter (flag set confirmed by the first implementation task; see research R10).
+- `vitest.config.ts` Chromium launch args include `--enable-unsafe-webgpu`, `--use-webgpu-adapter=swiftshader`, and `--use-angle=swiftshader` (confirmed by a real adapter/context probe; see research R10).
 
 ## Setup
 

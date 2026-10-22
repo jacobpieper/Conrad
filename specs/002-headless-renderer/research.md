@@ -60,7 +60,7 @@ All Technical Context items are resolved; there are no open NEEDS CLARIFICATION 
 
 ## R10. Test environment
 
-- **Decision**: Keep Vitest Browser Mode on Playwright Chromium. Extend `launchOptions.args` with flags that enable WebGPU in headless mode (`--enable-unsafe-webgpu` and a software adapter such as `--use-webgpu-adapter=swiftshader` / `--use-angle=swiftshader`). The exact flag set is confirmed by the first implementation task and recorded in the quickstart.
+- **Decision**: Keep Vitest Browser Mode on Playwright Chromium. `launchOptions.args` includes `--enable-unsafe-webgpu`, `--use-webgpu-adapter=swiftshader`, and `--use-angle=swiftshader` (alongside `--enable-precise-memory-info`). Confirmed by a real Browser Mode probe: both `navigator.gpu.requestAdapter()` and `OffscreenCanvas(1, 1).getContext('webgpu')` returned non-null.
 - **Presented-canvas verification**: Use an `OffscreenCanvas`, then `transferToImageBitmap()` and draw into a 2D canvas to read pixels, comparing against `readSurface` output. This verifies the real presentation path without mocks.
 - **Types**: `@webgpu/types` added as a dev dependency and listed in `tsconfig.json` `types`.
 

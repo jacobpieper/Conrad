@@ -7,7 +7,16 @@ export default defineConfig({
     globalSetup: ['tests/setup/cross-origin-server.ts'],
     browser: {
       enabled: true,
-      provider: playwright({ launchOptions: { args: ['--enable-precise-memory-info'] } }),
+      provider: playwright({
+        launchOptions: {
+          args: [
+            '--enable-precise-memory-info',
+            '--enable-unsafe-webgpu',
+            '--use-webgpu-adapter=swiftshader',
+            '--use-angle=swiftshader'
+          ]
+        }
+      }),
       headless: true,
       instances: [{ browser: 'chromium' }]
     }
