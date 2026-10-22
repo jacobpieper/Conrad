@@ -1,9 +1,9 @@
 <!--
 Sync Impact Report
-- Version change: 1.1.0 -> 1.2.0 (MINOR: new principle added)
-- Modified principles: none
-- Added sections: VII. Scope & Simplicity Constraints (scope, fail-fast errors,
-  browser target floor, zero shims)
+- Version change: 1.2.0 -> 1.3.0 (MINOR: materially expanded guidance)
+- Modified principles: V. Code, Git & Governance Standards (appended Terminal
+  Environment rule: Fish-only syntax, mandatory fnm prefix for Node/npm/npx)
+- Added sections: none
 - Removed sections: none
 - Follow-up TODOs: none
 -->
@@ -28,7 +28,8 @@ SvelteKit is the sole UI framework. The core math and pixel engine MUST NOT impo
 Every mathematical, spatial, and pixel manipulation pipeline MUST have unit tests, written exclusively with `vitest`; importing any other testing framework is FORBIDDEN. Hot loops MUST include benchmark tests that assert execution time budgets and strictly prove zero memory allocations during execution. Mock objects are FORBIDDEN for core math tests — tests MUST exercise real array buffer inputs and assert on real array buffer outputs.
 
 ### V. Code, Git & Governance Standards
-TypeScript MUST be used in strict mode: `any`, `@ts-ignore`, and implicit casts are FORBIDDEN. Statements MUST NOT be terminated with semicolons; a clean, modern, semicolon-free style is enforced throughout the codebase. Environment and Node version management MUST use `fnm`. The AI agent MUST autonomously stage and commit its own changes using `git` upon completing a working task or logical milestone; expecting or instructing the user to run `git add` or `git commit` manually is strictly FORBIDDEN. Commit messages MUST follow Conventional Commits (`feat:`, `fix:`, `chore:`, etc.). Commit subject lines MUST be concise (under 50 characters). FORBIDDEN to generate overly verbose or multi-clause commit messages. 
+TypeScript MUST be used in strict mode: `any`, `@ts-ignore`, and implicit casts are FORBIDDEN. Statements MUST NOT be terminated with semicolons; a clean, modern, semicolon-free style is enforced throughout the codebase. Environment and Node version management MUST use `fnm`. The AI agent MUST autonomously stage and commit its own changes using `git` upon completing a working task or logical milestone; expecting or instructing the user to run `git add` or `git commit` manually is strictly FORBIDDEN. Commit messages MUST follow Conventional Commits (`feat:`, `fix:`, `chore:`, etc.). Commit subject lines MUST be concise (under 50 characters). FORBIDDEN to generate overly verbose or multi-clause commit messages.
+**Terminal Environment:** The host runs the Fish shell exclusively. The agent MUST write all terminal commands using strict Fish syntax (e.g., `for i in (seq 3); ...; end`, `if test ...; ...; else; ...; end`, `and`/`or`). Bash/Zsh syntax (`&&`, `||`, `do...done`, `if...fi`) is strictly FORBIDDEN. Because the agent executes in a non-interactive shell, any command requiring Node/npm/npx MUST explicitly initialize the environment first using this exact prefix: `fnm env --shell fish | source; and fnm use 24; and [your command here]`.
 
 ### VI. The "Halt and Catch Fire" Rule
 If an AI agent cannot solve a problem without violating the zero-allocation rule, introducing OOP, or breaking the pure-function buffer constraints, it MUST halt, refuse to generate the code, and flag the architectural roadblock for human review. Silently breaking a core principle to force a working solution is strictly FORBIDDEN.
@@ -44,4 +45,4 @@ These constraints exist to prevent over-engineering and apply to all code, specs
 
 This constitution supersedes all other project practices, style guides, and prior conventions. Any conflict between this document and other guidance MUST be resolved in favor of this constitution. Amendments require: (1) a documented rationale for the change, (2) an explicit version bump following semantic versioning, and (3) a migration note for any affected code when applicable. All pull requests and code reviews MUST verify compliance with every Core Principle. Complexity that violates a principle MUST be rejected rather than waived.
 
-**Version**: 1.2.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22
+**Version**: 1.3.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-23
