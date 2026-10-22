@@ -6,8 +6,8 @@ Types below describe shape and rules only. See [contracts/headless-renderer-api.
 
 | Field | Type | Rules |
 |---|---|---|
-| `width` | `number` | Positive integer; total padded bytes limited by `maxStorageBufferBindingSize` |
-| `height` | `number` | Positive integer |
+| `width` | `number` | Positive integer, `<= device.limits.maxTextureDimension2D` |
+| `height` | `number` | Positive integer, `<= device.limits.maxTextureDimension2D` |
 | `data` | `Uint8Array` | `data.length === width * height`, row-major, top-left origin, 8-bit intensity |
 
 ## Viewport
@@ -23,10 +23,10 @@ Types below describe shape and rules only. See [contracts/headless-renderer-api.
 |---|---|---|
 | `device` | `GPUDevice` | Acquired once in `createRenderer` |
 | `pipeline` | `GPURenderPipeline` | Built once from the internal WGSL |
-| `bindGroupLayout` | `GPUBindGroupLayout` | Uniforms + image storage buffer |
-| `uniformBuffer` | `GPUBuffer` | 4 x `u32`: viewport w/h, image w/h (16 bytes) |
-| `uniformScratch` | `Uint32Array(4)` | Pre-allocated CPU copy for uploads |
-| `tailScratch` | `Uint8Array(4)` | Pre-allocated for the unaligned image tail |
+| `bindGroupLayout` | `GPUBindGroupLayout` | Uniforms + sampler + image texture |
+| `sampler` | `GPUSampler` | `linear` min/mag, `clamp-to-edge`, created once |
+| `uniformBuffer` | `GPUBuffer` | `vec2f` viewport size (8 bytes) |
+| `uniformScratch` | `Float32Array(2)` | Pre-allocated CPU copy for uploads |
 | `viewport` | `Viewport` | Current size |
 | `surface` | `GPUTexture` | `rgba8unorm`, viewport-sized |
 | `surfaceView` | `GPUTextureView` | Cached view of `surface` |
@@ -39,8 +39,8 @@ Types below describe shape and rules only. See [contracts/headless-renderer-api.
 | Field | Type | Notes |
 |---|---|---|
 | `width`, `height` | `number` | Dimensions of the uploaded image |
-| `buffer` | `GPUBuffer` | `STORAGE | COPY_DST`, `ceil(w*h/4)*4` bytes |
-| `bindGroup` | `GPUBindGroup` | Rebuilt only when `buffer` is recreated |
+| `texture` | `GPUTexture` | `r8unorm`, `TEXTURE_BINDING | COPY_DST`, `w x h` |
+| `bindGroup` | `GPUBindGroup` | Rebuilt only when `texture` is recreated |
 
 ### TargetState
 
@@ -56,7 +56,7 @@ created (no image, unbound)
   -- updateBuffer(valid) --> hasImage
   -- bindTarget(canvas) --> bound   (presents blank/current frame immediately)
 hasImage / bound
-  -- updateBuffer --> same state, buffer reused if size equal else recreated
+  -- updateBuffer --> same state, texture reused if dimensions equal else recreated
   -- resize --> surface + readback recreated if size differs, frame re-rendered, canvas resized if bound
   -- unbindTarget --> unbound (context unconfigured)
   -- destroyRenderer --> destroyed (all GPU resources released)
@@ -65,7 +65,7 @@ any invalid call --> throws RendererError, state unchanged
 
 ## Validation rules (FR-012, FR-013)
 
-1. Image: `width`/`height` positive integers; `data.length === width * height`; `width*height` bytes (padded) `<= maxStorageBufferBindingSize`.
+1. Image: `width`/`height` positive integers; `data.length === width * height`; both dimensions `<= maxTextureDimension2D`.
 2. Viewport: both dimensions positive integers, each `<= maxTextureDimension2D`.
 3. All validation runs before any GPU resource or state is mutated.
 
@@ -75,5 +75,5 @@ For viewport `(vw, vh)` and image `(iw, ih)`:
 
 - `s = min(vw / iw, vh / ih)`
 - displayed size `(iw * s, ih * s)`, offset `((vw - iw*s) / 2, (vh - ih*s) / 2)`
-- surface pixel `(x, y)` maps to image coordinate `((x + 0.5 - ox) / s - 0.5, (y + 0.5 - oy) / s - 0.5)`; outside `[-0.5, iw - 0.5] x [-0.5, ih - 0.5]` yields the background, inside is bilinear with edge clamp.
+- surface pixel `(x, y)` maps to image coordinate `((x + 0.5 - ox) / s - 0.5, (y + 0.5 - oy) / s - 0.5)`; outside `[-0.5, iw - 0.5] x [-0.5, ih - 0.5]` yields the background, inside is sampled by the GPU's linear sampler with edge clamp.
 - Background intensity is `16`.

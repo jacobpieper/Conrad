@@ -10,26 +10,32 @@ All Technical Context items are resolved; there are no open NEEDS CLARIFICATION 
 
 ## R2. Image storage on the GPU
 
-- **Decision**: A storage buffer (`STORAGE | COPY_DST`) holding the grayscale bytes packed four per `u32` (WGSL has no `u8`). Size is `ceil(width*height / 4) * 4` bytes, recreated only when that size changes.
-- **Rationale**: Matches the directive ("write the flat TypedArray to a GPU buffer"), and the flat row-major `Uint8Array` is uploaded unchanged, preserving the zero-copy buffer contract.
-- **Alternatives considered**: `r8unorm` texture + `writeTexture` (simpler and gives hardware filtering, but contradicts the explicit buffer directive).
+- **Decision**: A 2D `r8unorm` texture (`TEXTURE_BINDING | COPY_DST`) of exactly the image's width x height, plus one `linear`/`clamp-to-edge` sampler created at renderer setup. The texture is recreated only when the image dimensions change.
+- **Rationale**: One byte per pixel maps directly onto the flat `Uint8Array`, with no byte packing, padding, or WGSL `u8` workaround. `r8unorm` is filterable, so the GPU's native bilinear sampler does the resampling.
+- **Alternatives considered**: Storage buffer with manual `u32` packing and hand-written bilinear (rejected by directive: padding overhead, extra shader code, no hardware filtering).
 
 ## R3. Uploading without allocation or mapping
 
-- **Decision**: `queue.writeBuffer`. `writeBuffer` requires a byte size multiple of 4, so the 4-aligned prefix is written directly from the caller's array (no copy) and the 1-3 trailing bytes go through a pre-allocated 4-byte scratch array.
-- **Rationale**: No staging copy of the full image, no per-update allocation, and no mapping on the hot path. Mapping happens only in `readSurface`.
-- **Alternatives considered**: Persistently mapped staging buffers (extra state, async lifecycle, no gain for this size). Copy into a padded array each update (copy cost proportional to image size).
+- **Decision**: `queue.writeTexture(dest, data, { bytesPerRow: width, rowsPerImage: height }, { width, height })`. `writeTexture` does not require the 256-byte row alignment that buffer-to-texture copies do, so the caller's array is uploaded directly.
+- **Rationale**: No staging copy, no tail handling, no per-update allocation, and no mapping on the hot path. Mapping happens only in `readSurface`.
+- **Alternatives considered**: Persistently mapped staging buffers plus `copyBufferToTexture` (256-byte row padding, async lifecycle, no gain).
 
 ## R4. Fit and resampling
 
-- **Decision**: Contain fit computed in the fragment shader from a small uniform block (`viewportW, viewportH, imageW, imageH`). Scale `s = min(vw/iw, vh/ih)`; the image is centered; pixels outside the image rectangle get the background (`16/255` gray). Bilinear sampling at texel centers (four packed-buffer loads, clamped to image edges).
-- **Rationale**: Bilinear at texel centers is identity at scale 1 with matching dimensions, giving the exact copy required by FR-005, and it is visually acceptable for up/down-scaling (Assumptions). Uniform scalars live in a pre-allocated `Uint32Array` and are written with `writeBuffer` only on image or size changes.
-- **Alternatives considered**: Nearest neighbor (aliasing when downscaling large images). Mipmaps/area filtering (beyond MVP).
+- **Decision**: Contain fit computed in the fragment shader. The viewport size comes from a small uniform (`vec2f`); the image size comes from `textureDimensions` on the image texture. Scale `s = min(vw/iw, vh/ih)`; the image is centered; pixels outside the image rectangle get the background (`16/255` gray). Inside, the shader calls `textureSampleLevel(image, sampler, uv, 0)` with the linear sampler, where `uv` is the surface pixel center mapped into the image's normalized coordinates.
+- **Rationale**: At scale 1 with matching dimensions, pixel centers land exactly on texel centers, so bilinear is the identity and gives the exact copy required by FR-005. It is visually acceptable for up/down-scaling (Assumptions). `textureSampleLevel` avoids uniform-control-flow restrictions around the in/out-of-image branch. The uniform scalars live in a pre-allocated `Float32Array(2)` and are written with `writeBuffer` only on viewport changes.
+- **Alternatives considered**: Nearest neighbor sampler (aliasing when downscaling large images). Mipmaps/area filtering (beyond MVP).
 
 ## R5. Fullscreen draw
 
 - **Decision**: One pipeline, a vertex shader that generates a fullscreen triangle from `vertex_index` (no vertex buffer), `draw(3)` per render.
 - **Rationale**: Minimal resources and no geometry state.
+
+## R5b. Module layout
+
+- **Decision**: Four source files: `index.ts` (exports), `types.ts` (state and error types), `shader.ts` (WGSL string), `renderer.ts` (all operations plus unexported helpers).
+- **Rationale**: One module with one responsibility does not need a file per function (Constitution VII).
+- **Alternatives considered**: One file per operation plus resource/validation/render helpers (12 files, rejected as bloat).
 
 ## R6. Resize handling
 
@@ -44,7 +50,7 @@ All Technical Context items are resolved; there are no open NEEDS CLARIFICATION 
 
 ## R8. Error handling
 
-- **Decision**: Synchronous input validation throws `RendererError` before any state mutation: image length vs `width*height`, non-positive/non-integer image or viewport dimensions, viewport over `limits.maxTextureDimension2D`, image bytes over `limits.maxStorageBufferBindingSize`. Adapter or device acquisition returning `null`/rejecting is thrown from `createRenderer` with the native result as `cause`. No retries, no capability sniffing. Device loss is not recovered in the MVP (fail fast).
+- **Decision**: Synchronous input validation throws `RendererError` before any state mutation: image length vs `width*height`, non-positive/non-integer image or viewport dimensions, viewport over `limits.maxTextureDimension2D`, image width or height over `limits.maxTextureDimension2D`. Adapter or device acquisition returning `null`/rejecting is thrown from `createRenderer` with the native result as `cause`. No retries, no capability sniffing. Device loss is not recovered in the MVP (fail fast).
 - **Rationale**: Constitution VII (fail fast, trust native results) and FR-012/FR-013.
 
 ## R9. Browser support vs. constitution floor

@@ -37,7 +37,7 @@ readSurface(state: RendererState, out: Uint8Array): Promise<void>
 - Throws `RendererError('webgpu-unavailable')` if no adapter/device; `'invalid-viewport'` for bad size.
 
 ### `updateBuffer(state, image)`
-- Validates, uploads `image.data` with `queue.writeBuffer`, reuses the GPU buffer when the padded byte size is unchanged, otherwise recreates it and its bind group, then renders and presents (if bound).
+- Validates, uploads `image.data` with `queue.writeTexture` into an `r8unorm` texture, reuses the texture when the dimensions are unchanged, otherwise recreates it and its bind group, then renders and presents (if bound).
 - Throws `RendererError('invalid-image')` before any mutation on invalid input. Previous image stays active.
 - Does not retain or mutate `image.data`; the caller may reuse or transfer it afterwards.
 
