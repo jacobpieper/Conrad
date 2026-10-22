@@ -65,6 +65,13 @@ function render(state: RendererState): void {
     pass.draw(3)
   }
   pass.end()
+  if (state.target !== null) {
+    encoder.copyTextureToTexture(
+      { texture: state.surface },
+      { texture: state.target.context.getCurrentTexture() },
+      { width: state.viewport.width, height: state.viewport.height }
+    )
+  }
   state.device.queue.submit([encoder.finish()])
 }
 
@@ -195,11 +202,62 @@ export async function createRenderer(width: number, height: number): Promise<Ren
 }
 
 export function destroyRenderer(state: RendererState): void {
+  state.target?.context.unconfigure()
   state.image?.texture.destroy()
   state.surface.destroy()
   state.readbackBuffer.destroy()
   state.uniformBuffer.destroy()
   state.device.destroy()
+}
+
+export function resize(state: RendererState, width: number, height: number): void {
+  validateViewport(state.device, width, height)
+  if (state.viewport.width === width && state.viewport.height === height) return
+
+  const nextResources = createSurfaceResources(state.device, width, height)
+  state.surface.destroy()
+  state.readbackBuffer.destroy()
+  state.viewport.width = width
+  state.viewport.height = height
+  state.surface = nextResources.surface
+  state.surfaceView = nextResources.surfaceView
+  state.readbackBuffer = nextResources.readbackBuffer
+  state.uniformScratch[0] = width
+  state.uniformScratch[1] = height
+  state.device.queue.writeBuffer(state.uniformBuffer, 0, state.uniformScratch)
+  if (state.target !== null) {
+    state.target.canvas.width = width
+    state.target.canvas.height = height
+  }
+  render(state)
+}
+
+export function bindTarget(
+  state: RendererState,
+  canvas: HTMLCanvasElement | OffscreenCanvas
+): void {
+  state.target?.context.unconfigure()
+  canvas.width = state.viewport.width
+  canvas.height = state.viewport.height
+  const context = canvas.getContext('webgpu')
+  if (context === null) {
+    throw new RendererError('webgpu-unavailable', 'Unable to get a WebGPU canvas context')
+  }
+
+  context.configure({
+    device: state.device,
+    format: 'rgba8unorm',
+    alphaMode: 'opaque',
+    usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_DST
+  })
+  state.target = { canvas, context }
+  render(state)
+}
+
+export function unbindTarget(state: RendererState): void {
+  if (state.target === null) return
+  state.target.context.unconfigure()
+  state.target = null
 }
 
 export function updateBuffer(state: RendererState, image: GrayscaleImage): void {

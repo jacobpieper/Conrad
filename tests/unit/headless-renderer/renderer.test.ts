@@ -3,8 +3,11 @@ import type { GrayscaleImage } from '../../../src/core/image-loader'
 import {
   createRenderer,
   destroyRenderer,
+  bindTarget,
   readSurface,
   RendererError,
+  resize,
+  unbindTarget,
   updateBuffer
 } from '../../../src/core/headless-renderer'
 import type { RendererState } from '../../../src/core/headless-renderer'
@@ -32,6 +35,14 @@ describe('headless renderer image updates', () => {
     const pixels = new Uint8Array(width * height * 4)
     await readSurface(renderer, pixels)
     return pixels
+  }
+
+  async function canvasPixels(canvas: OffscreenCanvas): Promise<Uint8Array> {
+    const copy = new OffscreenCanvas(canvas.width, canvas.height)
+    const context = copy.getContext('2d')
+    if (context === null) throw new Error('2D canvas context unavailable')
+    context.drawImage(canvas, 0, 0)
+    return Uint8Array.from(context.getImageData(0, 0, canvas.width, canvas.height).data)
   }
 
   function image(width: number, height: number, data?: Uint8Array): GrayscaleImage {
@@ -143,5 +154,111 @@ describe('headless renderer image updates', () => {
     await expect(readSurface(renderer, new Uint8Array(15))).rejects.toMatchObject({
       reason: 'invalid-output'
     })
+  })
+
+  it('resizes and refits the active image at each new viewport size', async () => {
+    const renderer = await create(4, 4)
+    const input = image(3, 2, Uint8Array.from([10, 40, 70, 100, 130, 160]))
+    updateBuffer(renderer, input)
+
+    const sizes: [number, number][] = [[8, 4], [3, 7], [4, 4]]
+    for (const [width, height] of sizes) {
+      resize(renderer, width, height)
+      expect(renderer.viewport).toEqual({ width, height })
+      const actual = await surface(renderer)
+      const expected = referenceFrame(input, width, height)
+      for (let index = 0; index < expected.length; index++) {
+        expect(Math.abs((actual[index] ?? 0) - (expected[index] ?? 0))).toBeLessThanOrEqual(1)
+      }
+    }
+  })
+
+  it('resizes a blank surface and leaves same-size calls unchanged', async () => {
+    const renderer = await create(2, 3)
+    resize(renderer, 5, 4)
+    const blank = await surface(renderer)
+    expect(blank).toEqual(referenceFrame(null, 5, 4))
+
+    resize(renderer, 5, 4)
+
+    expect(await surface(renderer)).toEqual(blank)
+  })
+
+  it('rejects invalid sizes without changing viewport or surface', async () => {
+    const renderer = await create(3, 2)
+    const before = await surface(renderer)
+    const invalidSizes: [number, number][] = [
+      [0, 10],
+      [-1, 10],
+      [10.5, 10],
+      [renderer.device.limits.maxTextureDimension2D + 1, 1]
+    ]
+
+    for (const [width, height] of invalidSizes) {
+      let caught: unknown
+      try {
+        resize(renderer, width, height)
+      } catch (error) {
+        caught = error
+      }
+      expect(caught).toBeInstanceOf(RendererError)
+      expect(caught).toMatchObject({ reason: 'invalid-viewport' })
+      expect(renderer.viewport).toEqual({ width: 3, height: 2 })
+      expect(await surface(renderer)).toEqual(before)
+    }
+  })
+
+  it('ends rapid consecutive resizes in a frame for the latest size', async () => {
+    const renderer = await create(2, 2)
+    const input = image(2, 2, new Uint8Array([15, 85, 155, 225]))
+    updateBuffer(renderer, input)
+
+    resize(renderer, 4, 3)
+    resize(renderer, 7, 2)
+    resize(renderer, 5, 6)
+
+    expect(await surface(renderer)).toEqual(referenceFrame(input, 5, 6))
+    await expect(readSurface(renderer, new Uint8Array(4 * 3 * 4))).rejects.toMatchObject({
+      reason: 'invalid-output'
+    })
+  })
+
+  it('binds a target and keeps its presentation synchronized with the surface', async () => {
+    const renderer = await create(3, 2)
+    const canvas = new OffscreenCanvas(1, 1)
+    bindTarget(renderer, canvas)
+    expect([canvas.width, canvas.height]).toEqual([3, 2])
+    let currentSurface = await surface(renderer)
+    expect(await canvasPixels(canvas)).toEqual(currentSurface)
+
+    const input = image(2, 2, new Uint8Array([20, 80, 160, 240]))
+    updateBuffer(renderer, input)
+    currentSurface = await surface(renderer)
+    expect(await canvasPixels(canvas)).toEqual(currentSurface)
+
+    resize(renderer, 5, 4)
+    expect([canvas.width, canvas.height]).toEqual([5, 4])
+    currentSurface = await surface(renderer)
+    expect(await canvasPixels(canvas)).toEqual(currentSurface)
+  })
+
+  it('stops updating an unbound target and replaces targets when rebound', async () => {
+    const renderer = await create(2, 2)
+    const firstCanvas = new OffscreenCanvas(1, 1)
+    bindTarget(renderer, firstCanvas)
+    updateBuffer(renderer, image(2, 2, new Uint8Array([10, 20, 30, 40])))
+    const firstPixels = await canvasPixels(firstCanvas)
+
+    unbindTarget(renderer)
+    updateBuffer(renderer, image(2, 2, new Uint8Array([200, 210, 220, 230])))
+    expect(await canvasPixels(firstCanvas)).toEqual(firstPixels)
+
+    const secondCanvas = new OffscreenCanvas(1, 1)
+    bindTarget(renderer, secondCanvas)
+    expect(await canvasPixels(secondCanvas)).toEqual(await surface(renderer))
+    const secondInitialPixels = await canvasPixels(secondCanvas)
+    updateBuffer(renderer, image(2, 2, new Uint8Array([60, 90, 120, 150])))
+    expect(await canvasPixels(secondCanvas)).not.toEqual(secondInitialPixels)
+    expect(await canvasPixels(firstCanvas)).toEqual(firstPixels)
   })
 })

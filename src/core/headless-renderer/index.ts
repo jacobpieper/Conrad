@@ -1,4 +1,12 @@
-export { createRenderer, destroyRenderer, readSurface, updateBuffer } from './renderer'
+export {
+  bindTarget,
+  createRenderer,
+  destroyRenderer,
+  readSurface,
+  resize,
+  unbindTarget,
+  updateBuffer
+} from './renderer'
 export { RendererError } from './types'
 export type {
   GrayscaleImage,
