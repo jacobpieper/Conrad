@@ -1,5 +1,5 @@
 import { RendererError } from './types'
-import type { RendererState, Viewport } from './types'
+import type { GrayscaleImage, ImageState, RendererState, Viewport } from './types'
 import { rendererShader } from './shader'
 
 const bytesPerPixel = 4
@@ -66,6 +66,42 @@ function render(state: RendererState): void {
   }
   pass.end()
   state.device.queue.submit([encoder.finish()])
+}
+
+function validateImage(state: RendererState, image: GrayscaleImage): void {
+  const maxDimension = state.device.limits.maxTextureDimension2D
+  if (
+    !Number.isInteger(image.width) ||
+    !Number.isInteger(image.height) ||
+    image.width <= 0 ||
+    image.height <= 0 ||
+    image.width > maxDimension ||
+    image.height > maxDimension ||
+    image.data.length !== image.width * image.height
+  ) {
+    throw new RendererError(
+      'invalid-image',
+      `Image dimensions must be positive integers no greater than ${maxDimension} and data length must equal width * height`
+    )
+  }
+}
+
+function createImageState(
+  state: RendererState,
+  image: GrayscaleImage,
+  texture: GPUTexture
+): ImageState {
+  const view = texture.createView()
+  const bindGroup = state.device.createBindGroup({
+    layout: state.bindGroupLayout,
+    entries: [
+      { binding: 0, resource: { buffer: state.uniformBuffer } },
+      { binding: 1, resource: state.sampler },
+      { binding: 2, resource: view }
+    ]
+  })
+
+  return { width: image.width, height: image.height, texture, bindGroup }
 }
 
 export async function createRenderer(width: number, height: number): Promise<RendererState> {
@@ -164,6 +200,37 @@ export function destroyRenderer(state: RendererState): void {
   state.readbackBuffer.destroy()
   state.uniformBuffer.destroy()
   state.device.destroy()
+}
+
+export function updateBuffer(state: RendererState, image: GrayscaleImage): void {
+  validateImage(state, image)
+
+  const previousImage = state.image
+  const reuseTexture =
+    previousImage !== null &&
+    previousImage.width === image.width &&
+    previousImage.height === image.height
+  const texture = reuseTexture
+    ? previousImage.texture
+    : state.device.createTexture({
+        size: { width: image.width, height: image.height },
+        format: 'r8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+      })
+
+  state.device.queue.writeTexture(
+    { texture },
+    image.data,
+    { bytesPerRow: image.width, rowsPerImage: image.height },
+    { width: image.width, height: image.height }
+  )
+
+  const nextImage = reuseTexture
+    ? { ...previousImage, width: image.width, height: image.height }
+    : createImageState(state, image, texture)
+  state.image = nextImage
+  if (!reuseTexture) previousImage?.texture.destroy()
+  render(state)
 }
 
 export async function readSurface(state: RendererState, out: Uint8Array): Promise<void> {

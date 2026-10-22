@@ -1,4 +1,4 @@
-export { createRenderer, destroyRenderer, readSurface } from './renderer'
+export { createRenderer, destroyRenderer, readSurface, updateBuffer } from './renderer'
 export { RendererError } from './types'
 export type {
   GrayscaleImage,
