@@ -27,12 +27,13 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   let displaySize = imageSize * scale;
   let offset = (viewport.size - displaySize) * 0.5;
   let uv = (input.position.xy - offset) / displaySize;
+  let edgeTolerance = 0.00001;
 
-  if (any(uv < vec2f(0.0)) || any(uv > vec2f(1.0))) {
+  if (any(uv < vec2f(-edgeTolerance)) || any(uv > vec2f(1.0 + edgeTolerance))) {
     return vec4f(16.0 / 255.0, 16.0 / 255.0, 16.0 / 255.0, 1.0);
   }
 
-  let intensity = textureSampleLevel(imageTexture, imageSampler, uv, 0.0).r;
+  let intensity = textureSampleLevel(imageTexture, imageSampler, clamp(uv, vec2f(0.0), vec2f(1.0)), 0.0).r;
   return vec4f(intensity, intensity, intensity, 1.0);
 }
 `

@@ -236,7 +236,6 @@ export function bindTarget(
   state: RendererState,
   canvas: HTMLCanvasElement | OffscreenCanvas
 ): void {
-  state.target?.context.unconfigure()
   canvas.width = state.viewport.width
   canvas.height = state.viewport.height
   const context = canvas.getContext('webgpu')
@@ -250,6 +249,7 @@ export function bindTarget(
     alphaMode: 'opaque',
     usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_DST
   })
+  state.target?.context.unconfigure()
   state.target = { canvas, context }
   render(state)
 }

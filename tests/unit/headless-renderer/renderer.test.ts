@@ -168,7 +168,8 @@ describe('headless renderer image updates', () => {
       const actual = await surface(renderer)
       const expected = referenceFrame(input, width, height)
       for (let index = 0; index < expected.length; index++) {
-        expect(Math.abs((actual[index] ?? 0) - (expected[index] ?? 0))).toBeLessThanOrEqual(1)
+        const difference = Math.abs((actual[index] ?? 0) - (expected[index] ?? 0))
+        expect(difference, `viewport ${width}x${height}, byte ${index}: actual ${actual[index]}, expected ${expected[index]}`).toBeLessThanOrEqual(1)
       }
     }
   })
@@ -260,5 +261,22 @@ describe('headless renderer image updates', () => {
     updateBuffer(renderer, image(2, 2, new Uint8Array([60, 90, 120, 150])))
     expect(await canvasPixels(secondCanvas)).not.toEqual(secondInitialPixels)
     expect(await canvasPixels(firstCanvas)).toEqual(firstPixels)
+  })
+
+  it('preserves the active target when a replacement canvas cannot provide WebGPU', async () => {
+    const renderer = await create(2, 2)
+    const activeCanvas = new OffscreenCanvas(1, 1)
+    bindTarget(renderer, activeCanvas)
+    const activeTarget = renderer.target
+    if (activeTarget === null) throw new Error('Target did not bind')
+    const previousPixels = await canvasPixels(activeCanvas)
+
+    const incompatibleCanvas = new OffscreenCanvas(1, 1)
+    incompatibleCanvas.getContext('2d')
+    expect(() => bindTarget(renderer, incompatibleCanvas)).toThrowError(RendererError)
+
+    expect(renderer.target).toBe(activeTarget)
+    updateBuffer(renderer, image(2, 2, new Uint8Array([30, 80, 130, 180])))
+    expect(await canvasPixels(activeCanvas)).not.toEqual(previousPixels)
   })
 })

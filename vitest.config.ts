@@ -12,8 +12,8 @@ export default defineConfig({
           args: [
             '--enable-precise-memory-info',
             '--enable-unsafe-webgpu',
-            '--use-webgpu-adapter=swiftshader',
-            '--use-angle=swiftshader'
+            '--enable-features=Vulkan',
+            '--use-angle=vulkan'
           ]
         }
       }),

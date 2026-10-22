@@ -31,7 +31,7 @@ Single project (per [plan.md](./plan.md) Structure Decision): `src/core/headless
 
 - [X] T001 Create directories `src/core/headless-renderer/` and `tests/unit/headless-renderer/`
 - [X] T002 [P] Add `@webgpu/types` as a devDependency in `package.json` and set `compilerOptions.types` to `["@webgpu/types", "node"]` in `tsconfig.json` (`node` must stay listed so existing `tests/setup/cross-origin-server.ts` keeps type-checking)
-- [X] T003 [P] Extend `launchOptions.args` in `vitest.config.ts` (keep `--enable-precise-memory-info`) with Chromium flags that expose a WebGPU adapter in headless mode: `--enable-unsafe-webgpu` and a software adapter (`--use-webgpu-adapter=swiftshader`, plus `--use-angle=swiftshader` if needed)
+- [X] T003 [P] Extend `launchOptions.args` in `vitest.config.ts` (keep `--enable-precise-memory-info`) with Chromium flags that expose a WebGPU adapter in headless mode: `--enable-unsafe-webgpu`, `--enable-features=Vulkan`, and `--use-angle=vulkan`; real canvas render/copy probes pass on this backend
 - [X] T004 Confirm the flags from T003 with a throwaway `tests/unit/headless-renderer/probe.test.ts` asserting `await navigator.gpu.requestAdapter()` is non-null and that an `OffscreenCanvas(1, 1).getContext('webgpu')` is non-null; adjust the flag set until it passes, record the final flags in [research.md](./research.md) R10 and [quickstart.md](./quickstart.md) prerequisites, then delete the probe file (depends on T001, T003)
 
 ---
@@ -104,7 +104,7 @@ Single project (per [plan.md](./plan.md) Structure Decision): `src/core/headless
 
 > Write these first and confirm they fail before T017.
 
-- [ ] T016 [US3] Add US3 tests to `tests/unit/headless-renderer/renderer.test.ts` using an `OffscreenCanvas` and capturing it via `transferToImageBitmap()` drawn into a 2D `OffscreenCanvas` (`getImageData`): (a) all earlier scenarios still pass with no target bound; (b) `bindTarget` sets the canvas size to the viewport and shows the current surface immediately; (c) `updateBuffer` while bound updates the target to match `readSurface` exactly; (d) `resize` while bound updates the canvas size and content; (e) after `unbindTarget`, `updateBuffer` changes the surface but not the old canvas; (f) binding a second canvas replaces the first, which is no longer updated (depends on T015). Note: written, but presentation assertions fail in headless Chromium/SwiftShader with `AbortError: A valid external Instance reference no longer exists`; a minimal WebGPU canvas render/copy probe reproduced this independent of renderer code.
+- [X] T016 [US3] Add US3 tests to `tests/unit/headless-renderer/renderer.test.ts` using an `OffscreenCanvas` and capturing its pixels via a 2D `OffscreenCanvas`: (a) all earlier scenarios pass with no target bound; (b) `bindTarget` sets canvas size and presents the current surface; (c) updates while bound match `readSurface`; (d) resize updates target size and content; (e) after unbind, the previous canvas is unchanged; (f) binding a second canvas replaces the first (depends on T015). Tests pass using Chromium's Vulkan WebGPU backend.
 
 ### Implementation for User Story 3
 
@@ -119,7 +119,7 @@ Single project (per [plan.md](./plan.md) Structure Decision): `src/core/headless
 
 - [X] T019 [P] Add `tests/unit/headless-renderer/update-buffer.bench.ts`, following the heap-growth pattern in `tests/unit/image-loader/to-grayscale.bench.ts` (including its control that must register): at a 1920x1080 viewport and image, `updateBuffer` plus `await device.queue.onSubmittedWorkDone()` completes under 50 ms (SC-006); repeated `updateBuffer` at constant size shows JS heap growth below a small threshold (SC-005) (depends on T013)
 - [X] T020 [P] Run `npm run typecheck` and `npm run lint` and fix findings in `src/core/headless-renderer/` and `tests/unit/headless-renderer/` (no semicolons, no `any`, no `@ts-ignore`) (depends on T018)
-- [ ] T021 Run `npx vitest run tests/unit/headless-renderer` plus the full `npm test`, and walk through every scenario in [quickstart.md](./quickstart.md); confirm `src/core/headless-renderer/` contains exactly the 4 planned files and imports no Svelte or `document`/`window` APIs (depends on T019, T020). Partial: typecheck, lint, 42 tests, and the four-file/framework-boundary checks pass; 2 canvas target tests fail with `A valid external Instance reference no longer exists` in headless Chromium/SwiftShader, reproduced by a minimal canvas submission probe.
+- [X] T021 Run `npx vitest run tests/unit/headless-renderer` plus the full `npm test`, and walk through every scenario in [quickstart.md](./quickstart.md); confirm `src/core/headless-renderer/` contains exactly the 4 planned files and imports no Svelte or `document`/`window` APIs (depends on T019, T020). All 45 project tests, renderer tests/benchmark, typecheck, lint, and four-file/framework-boundary checks pass.
 
 ---
 
@@ -179,3 +179,8 @@ Task: "CPU reference in tests/unit/headless-renderer/reference.ts"
 - If a task cannot be completed without per-pixel allocation, OOP state, or breaking the pure-function contract, halt and flag it per Constitution VI
 - If T004 cannot get a WebGPU adapter in headless Chromium, stop and flag it for human review rather than mocking WebGPU (mocks are forbidden)
 - Fail fast: no retries, fallbacks, or feature checks; trust native WebGPU results
+
+## Phase 7: Convergence
+
+- [X] T022 [US3] Establish a real-WebGPU browser test path for canvas presentation and make the existing `OffscreenCanvas` synchronization, update, resize, unbind, and replacement assertions in `tests/unit/headless-renderer/renderer.test.ts` pass without mocks; configure Chromium with Vulkan WebGPU (`--enable-features=Vulkan`, `--use-angle=vulkan`) and validate all target scenarios (FR-007, SC-003, US3/AC2-US3/AC4; partial)
+- [X] T023 [US3] Make `bindTarget` in `src/core/headless-renderer/renderer.ts` failure-atomic: acquire and configure the replacement context before unconfiguring or replacing the current target, and preserve the old target and renderer state if the new context is unavailable or configuration fails; add a real-WebGPU regression test to `tests/unit/headless-renderer/renderer.test.ts` that confirms a failed replacement leaves the previously bound target operational (FR-013; contradicts)
