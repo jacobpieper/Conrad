@@ -30,7 +30,7 @@ describe('updateBuffer benchmark', () => {
     const image: GrayscaleImage = {
       width: 1920,
       height: 1080,
-      data: new Uint8Array(1920 * 1080).fill(128)
+      data: new Uint8ClampedArray(1920 * 1080).fill(128)
     }
     updateBuffer(renderer, image)
     await renderer.device.queue.onSubmittedWorkDone()

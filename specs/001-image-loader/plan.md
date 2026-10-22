@@ -6,7 +6,7 @@
 
 ## Summary
 
-Build a client-side Image Loader module that accepts a URL or Blob referencing a PNG, JPEG, or WebP image, decodes it using native browser image/canvas APIs, and flattens the decoded pixels into a single-channel grayscale `Uint8Array` buffer (plus width/height) using a standard luminance formula. The module is a pure-function, buffer-in/buffer-out core engine piece with no UI or framework dependency, so it can feed downstream pixel-processing pipelines (convolution, raycasting input, etc.).
+Build a client-side Image Loader module that accepts a URL or Blob referencing a PNG, JPEG, or WebP image, decodes it using native browser image/canvas APIs, and flattens the decoded pixels into a single-channel grayscale `Uint8ClampedArray` buffer (plus width/height) using a standard luminance formula. The module is a pure-function, buffer-in/buffer-out core engine piece with no UI or framework dependency, so it can feed downstream pixel-processing pipelines (convolution, raycasting input, etc.).
 
 ## Technical Context
 
@@ -24,7 +24,7 @@ Build a client-side Image Loader module that accepts a URL or Blob referencing a
 
 **Performance Goals**: Decode + grayscale-convert a 1920×1080 image in under 1 second end-to-end (per SC-001); single-pass grayscale conversion over the decoded pixel buffer with no redundant intermediate copies
 
-**Constraints**: Output buffer MUST be a flat, pre-sized `Uint8Array` (no per-pixel allocations during the conversion pass); no OOP state — the module exposes pure functions over plain data; MUST NOT import Svelte or any UI-layer dependency; cross-origin loads are bound by the browser's existing CORS model (not bypassed)
+**Constraints**: Output buffer MUST be a flat, pre-sized `Uint8ClampedArray` (no per-pixel allocations during the conversion pass); no OOP state — the module exposes pure functions over plain data; MUST NOT import Svelte or any UI-layer dependency; cross-origin loads are bound by the browser's existing CORS model (not bypassed)
 
 **Scale/Scope**: One module: URL + Blob input paths, 3 supported formats (PNG/JPEG/WebP), first-frame-only for animated sources
 
@@ -34,10 +34,10 @@ Build a client-side Image Loader module that accepts a URL or Blob referencing a
 
 | Principle | Status | Notes |
 |---|---|---|
-| I. Data-Oriented Memory | PASS | Output is a flat pre-sized `Uint8Array`; conversion is a pure procedural function over packed buffers; no entity classes introduced. One-time decode is not a per-frame hot loop, but the grayscale conversion pass itself still avoids per-pixel allocation. |
+| I. Data-Oriented Memory | PASS | Output is a flat pre-sized `Uint8ClampedArray`; conversion is a pure procedural function over packed buffers; no entity classes introduced. One-time decode is not a per-frame hot loop, but the grayscale conversion pass itself still avoids per-pixel allocation. |
 | II. Architecture & Pipeline Modularity | PASS | Single-purpose module with a strict buffer-contract output (`{ width, height, data }`); runs entirely client-side (browser `fetch` + Canvas decode, no backend compute); defaults to single-channel grayscale output per the constitution's default. |
 | III. UI & Interactivity Standards | PASS | Module lives in the core engine layer; exposes plain functions/data only; no Svelte reactivity, stores, or DOM framework bindings are imported. |
-| IV. Testing & Benchmarking | PASS | Tests written exclusively in `vitest`; no mocks for the core decode/convert path — tests exercise real image bytes and assert on real `Uint8Array` output. A benchmark test for the grayscale conversion pass asserts its time budget and zero additional allocations. |
+| IV. Testing & Benchmarking | PASS | Tests written exclusively in `vitest`; no mocks for the core decode/convert path — tests exercise real image bytes and assert on real `Uint8ClampedArray` output. A benchmark test for the grayscale conversion pass asserts its time budget and zero additional allocations. |
 | V. Code, Git & Governance | PASS | Implementation will use strict TypeScript, no semicolons, and Conventional Commits, applied during `/speckit-implement`. |
 | VI. Halt and Catch Fire | N/A | No architectural roadblock identified; flag during implementation if one emerges. |
 
@@ -65,7 +65,7 @@ src/
 │   └── image-loader/
 │       ├── index.ts            # Public exports (loadImage, types)
 │       ├── load-image.ts       # URL/Blob -> decoded ImageBitmap/ImageData orchestration
-│       ├── to-grayscale.ts     # Pure RGBA buffer -> single-channel Uint8Array conversion
+│       ├── to-grayscale.ts     # Pure RGBA buffer -> single-channel Uint8ClampedArray conversion
 │       ├── errors.ts           # ImageLoadError and failure reasons
 │       └── types.ts            # ImageSource, GrayscaleImage
 └── (future core modules alongside image-loader, e.g. convolution/, raycasting/)

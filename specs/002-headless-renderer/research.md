@@ -11,7 +11,7 @@ All Technical Context items are resolved; there are no open NEEDS CLARIFICATION 
 ## R2. Image storage on the GPU
 
 - **Decision**: A 2D `r8unorm` texture (`TEXTURE_BINDING | COPY_DST`) of exactly the image's width x height, plus one `linear`/`clamp-to-edge` sampler created at renderer setup. The texture is recreated only when the image dimensions change.
-- **Rationale**: One byte per pixel maps directly onto the flat `Uint8Array`, with no byte packing, padding, or WGSL `u8` workaround. `r8unorm` is filterable, so the GPU's native bilinear sampler does the resampling.
+- **Rationale**: One byte per pixel maps directly onto the flat `Uint8ClampedArray`, with no byte packing, padding, or WGSL `u8` workaround. `r8unorm` is filterable, so the GPU's native bilinear sampler does the resampling.
 - **Alternatives considered**: Storage buffer with manual `u32` packing and hand-written bilinear (rejected by directive: padding overhead, extra shader code, no hardware filtering).
 
 ## R3. Uploading without allocation or mapping
@@ -66,4 +66,4 @@ All Technical Context items are resolved; there are no open NEEDS CLARIFICATION 
 
 ## R11. Zero-copy / worker readiness (Principle I)
 
-- **Finding**: `GPUDevice` and canvas contexts cannot be transferred, but inputs are plain `Uint8Array`s (transferable) and `OffscreenCanvas` is accepted by `bindTarget`, so the renderer can run entirely inside a worker. No design change needed.
+- **Finding**: `GPUDevice` and canvas contexts cannot be transferred, but inputs are plain `Uint8ClampedArray`s (transferable) and `OffscreenCanvas` is accepted by `bindTarget`, so the renderer can run entirely inside a worker. No design change needed.

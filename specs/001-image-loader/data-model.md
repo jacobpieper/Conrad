@@ -24,7 +24,7 @@ The output of a successful load (FR-005, FR-006).
 |---|---|---|
 | `width` | `number` | Source image width in pixels, integer > 0 |
 | `height` | `number` | Source image height in pixels, integer > 0 |
-| `data` | `Uint8Array` | Flat, row-major, single-channel grayscale buffer; `data.length === width * height`; one byte per pixel, origin top-left |
+| `data` | `Uint8ClampedArray` | Flat, row-major, single-channel grayscale buffer; `data.length === width * height`; one byte per pixel, origin top-left |
 
 **Validation rules**:
 - `data.length` MUST always exactly equal `width * height` (SC-002).

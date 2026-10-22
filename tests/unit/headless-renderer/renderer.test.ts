@@ -45,8 +45,8 @@ describe('headless renderer image updates', () => {
     return Uint8Array.from(context.getImageData(0, 0, canvas.width, canvas.height).data)
   }
 
-  function image(width: number, height: number, data?: Uint8Array): GrayscaleImage {
-    const pixels = data ?? new Uint8Array(Math.max(0, width * height))
+  function image(width: number, height: number, data?: Uint8ClampedArray): GrayscaleImage {
+    const pixels = data ?? new Uint8ClampedArray(Math.max(0, width * height))
     return { width, height, data: pixels }
   }
 
@@ -58,7 +58,7 @@ describe('headless renderer image updates', () => {
 
   it('copies a viewport-sized image exactly into the surface', async () => {
     const renderer = await create(4, 4)
-    const input = image(4, 4, Uint8Array.from({ length: 16 }, (_, index) => index * 13))
+    const input = image(4, 4, Uint8ClampedArray.from({ length: 16 }, (_, index) => index * 13))
 
     updateBuffer(renderer, input)
 
@@ -87,7 +87,7 @@ describe('headless renderer image updates', () => {
     const input = image(
       imageWidth,
       imageHeight,
-      Uint8Array.from({ length: imageWidth * imageHeight }, (_, index) => (index * 37 + 11) % 256)
+      Uint8ClampedArray.from({ length: imageWidth * imageHeight }, (_, index) => (index * 37 + 11) % 256)
     )
 
     updateBuffer(renderer, input)
@@ -101,19 +101,19 @@ describe('headless renderer image updates', () => {
 
   it('fully replaces the previous image', async () => {
     const renderer = await create(2, 2)
-    updateBuffer(renderer, image(2, 2, new Uint8Array([20, 40, 60, 80])))
-    updateBuffer(renderer, image(2, 2, new Uint8Array([180, 160, 140, 120])))
+    updateBuffer(renderer, image(2, 2, new Uint8ClampedArray([20, 40, 60, 80])))
+    updateBuffer(renderer, image(2, 2, new Uint8ClampedArray([180, 160, 140, 120])))
 
-    expect(await surface(renderer)).toEqual(referenceFrame(image(2, 2, new Uint8Array([180, 160, 140, 120])), 2, 2))
+    expect(await surface(renderer)).toEqual(referenceFrame(image(2, 2, new Uint8ClampedArray([180, 160, 140, 120])), 2, 2))
   })
 
   it('rejects malformed images and preserves the current surface', async () => {
     const renderer = await create(2, 2)
-    updateBuffer(renderer, image(2, 2, new Uint8Array([25, 50, 75, 100])))
+    updateBuffer(renderer, image(2, 2, new Uint8ClampedArray([25, 50, 75, 100])))
     const before = await surface(renderer)
     const maxDimension = renderer.device.limits.maxTextureDimension2D
     const invalidImages = [
-      image(2, 2, new Uint8Array(3)),
+      image(2, 2, new Uint8ClampedArray(3)),
       image(0, 2),
       image(-1, 2),
       image(1.5, 2),
@@ -139,8 +139,8 @@ describe('headless renderer image updates', () => {
   it('keeps independent renderers isolated', async () => {
     const firstRenderer = await create(2, 2)
     const secondRenderer = await create(2, 2)
-    const firstImage = image(2, 2, new Uint8Array([10, 20, 30, 40]))
-    const secondImage = image(2, 2, new Uint8Array([210, 220, 230, 240]))
+    const firstImage = image(2, 2, new Uint8ClampedArray([10, 20, 30, 40]))
+    const secondImage = image(2, 2, new Uint8ClampedArray([210, 220, 230, 240]))
 
     updateBuffer(firstRenderer, firstImage)
     updateBuffer(secondRenderer, secondImage)
@@ -158,7 +158,7 @@ describe('headless renderer image updates', () => {
 
   it('resizes and refits the active image at each new viewport size', async () => {
     const renderer = await create(4, 4)
-    const input = image(3, 2, Uint8Array.from([10, 40, 70, 100, 130, 160]))
+    const input = image(3, 2, Uint8ClampedArray.from([10, 40, 70, 100, 130, 160]))
     updateBuffer(renderer, input)
 
     const sizes: [number, number][] = [[8, 4], [3, 7], [4, 4]]
@@ -211,7 +211,7 @@ describe('headless renderer image updates', () => {
 
   it('ends rapid consecutive resizes in a frame for the latest size', async () => {
     const renderer = await create(2, 2)
-    const input = image(2, 2, new Uint8Array([15, 85, 155, 225]))
+    const input = image(2, 2, new Uint8ClampedArray([15, 85, 155, 225]))
     updateBuffer(renderer, input)
 
     resize(renderer, 4, 3)
@@ -232,7 +232,7 @@ describe('headless renderer image updates', () => {
     let currentSurface = await surface(renderer)
     expect(await canvasPixels(canvas)).toEqual(currentSurface)
 
-    const input = image(2, 2, new Uint8Array([20, 80, 160, 240]))
+    const input = image(2, 2, new Uint8ClampedArray([20, 80, 160, 240]))
     updateBuffer(renderer, input)
     currentSurface = await surface(renderer)
     expect(await canvasPixels(canvas)).toEqual(currentSurface)
@@ -247,18 +247,18 @@ describe('headless renderer image updates', () => {
     const renderer = await create(2, 2)
     const firstCanvas = new OffscreenCanvas(1, 1)
     bindTarget(renderer, firstCanvas)
-    updateBuffer(renderer, image(2, 2, new Uint8Array([10, 20, 30, 40])))
+    updateBuffer(renderer, image(2, 2, new Uint8ClampedArray([10, 20, 30, 40])))
     const firstPixels = await canvasPixels(firstCanvas)
 
     unbindTarget(renderer)
-    updateBuffer(renderer, image(2, 2, new Uint8Array([200, 210, 220, 230])))
+    updateBuffer(renderer, image(2, 2, new Uint8ClampedArray([200, 210, 220, 230])))
     expect(await canvasPixels(firstCanvas)).toEqual(firstPixels)
 
     const secondCanvas = new OffscreenCanvas(1, 1)
     bindTarget(renderer, secondCanvas)
     expect(await canvasPixels(secondCanvas)).toEqual(await surface(renderer))
     const secondInitialPixels = await canvasPixels(secondCanvas)
-    updateBuffer(renderer, image(2, 2, new Uint8Array([60, 90, 120, 150])))
+    updateBuffer(renderer, image(2, 2, new Uint8ClampedArray([60, 90, 120, 150])))
     expect(await canvasPixels(secondCanvas)).not.toEqual(secondInitialPixels)
     expect(await canvasPixels(firstCanvas)).toEqual(firstPixels)
   })
@@ -276,7 +276,7 @@ describe('headless renderer image updates', () => {
     expect(() => bindTarget(renderer, incompatibleCanvas)).toThrowError(RendererError)
 
     expect(renderer.target).toBe(activeTarget)
-    updateBuffer(renderer, image(2, 2, new Uint8Array([30, 80, 130, 180])))
+    updateBuffer(renderer, image(2, 2, new Uint8ClampedArray([30, 80, 130, 180])))
     expect(await canvasPixels(activeCanvas)).not.toEqual(previousPixels)
   })
 
@@ -284,12 +284,12 @@ describe('headless renderer image updates', () => {
     const renderer = await create(2, 2)
     const canvas = new OffscreenCanvas(1, 1)
     bindTarget(renderer, canvas)
-    updateBuffer(renderer, image(2, 2, new Uint8Array([10, 50, 90, 130])))
+    updateBuffer(renderer, image(2, 2, new Uint8ClampedArray([10, 50, 90, 130])))
 
     bindTarget(renderer, canvas)
     expect(await canvasPixels(canvas)).toEqual(await surface(renderer))
 
-    const nextImage = image(2, 2, new Uint8Array([40, 80, 120, 160]))
+    const nextImage = image(2, 2, new Uint8ClampedArray([40, 80, 120, 160]))
     updateBuffer(renderer, nextImage)
     expect(await canvasPixels(canvas)).toEqual(await surface(renderer))
 

@@ -34,7 +34,7 @@ A framework-agnostic TypeScript module that renders a single-channel `GrayscaleI
 
 | Principle | Status | Notes |
 |---|---|---|
-| I. Data-Oriented Memory | PASS | Image data stays a flat `Uint8Array` and is uploaded as-is to an `r8unorm` texture (one byte per pixel, no repacking). State is a plain record; operations are free functions. The `Float32Array` uniform scratch is pre-allocated once. Per-frame WebGPU API objects (command encoder, canvas texture view) are unavoidable API-owned objects, created per on-demand render, never per pixel. Renders are event-driven, not a continuous loop. |
+| I. Data-Oriented Memory | PASS | Image data stays a flat `Uint8ClampedArray` and is uploaded as-is to an `r8unorm` texture (one byte per pixel, no repacking). State is a plain record; operations are free functions. The `Float32Array` uniform scratch is pre-allocated once. Per-frame WebGPU API objects (command encoder, canvas texture view) are unavoidable API-owned objects, created per on-demand render, never per pixel. Renders are event-driven, not a continuous loop. |
 | II. Architecture & Pipeline Modularity | PASS | Strict buffer contract in (`GrayscaleImage`) and out (surface RGBA8 via `readSurface`, or canvas). Fully client-side, native WebGPU. Grayscale is single-channel (`r8unorm`) until the final RGBA8 surface, which is required for presentation. |
 | III. UI & Interactivity Standards | PASS | No Svelte, no DOM lookups; `HTMLCanvasElement` is only a caller-supplied argument type for `bindTarget`. `resize` is a plain function that Svelte code will call from its own `ResizeObserver` later. |
 | IV. Testing & Benchmarking | PASS | Vitest only, no mocks, real GPU read-back. A benchmark asserts the time budget and that JS heap does not grow across repeated `updateBuffer` calls at constant size. |
@@ -45,7 +45,7 @@ A framework-agnostic TypeScript module that renders a single-channel `GrayscaleI
 ### Resolved Tensions
 
 1. **Requested signatures vs. FR-010/FR-014 (no hidden global state, N independent renderers).** `bindTarget(canvas)`, `resize(w, h)`, `updateBuffer(data)` cannot work without module-level singletons. Resolution: each takes the renderer state as an explicit first argument (`bindTarget(state, canvas)`, `resize(state, w, h)`, `updateBuffer(state, image)`), with the state created by `createRenderer`. Names and responsibilities are exactly as requested.
-2. **`updateBuffer(data)` vs. needing dimensions.** The image texture is sized from the image, and the fit needs width and height (FR-001, FR-004), so `updateBuffer` accepts the existing `GrayscaleImage` (`{ width, height, data }`) instead of a bare array; `data` is still the flat `Uint8Array` written to the GPU texture.
+2. **`updateBuffer(data)` vs. needing dimensions.** The image texture is sized from the image, and the fit needs width and height (FR-001, FR-004), so `updateBuffer` accepts the existing `GrayscaleImage` (`{ width, height, data }`) instead of a bare array; `data` is still the flat `Uint8ClampedArray` written to the GPU texture.
 3. **Headless readability (FR-009/FR-011) vs. WebGPU.** Rendering targets an offscreen texture, and `readSurface` performs the internal `copyTextureToBuffer` + `mapAsync`, satisfying "buffer mapping happens internally".
 
 ## Project Structure

@@ -12,7 +12,7 @@ All Technical Context items were resolvable from the constitution and standard w
 
 ## Decision: Single-pass RGBA → grayscale conversion using ITU-R BT.601 luma weights
 
-- **Decision**: `gray = round(0.299*R + 0.587*G + 0.114*B)`, alpha discarded, written directly into a pre-sized `Uint8Array` of length `width * height` in one forward loop over the source `Uint8ClampedArray` from `ImageData`.
+- **Decision**: `gray = round(0.299*R + 0.587*G + 0.114*B)`, alpha discarded, written directly into a pre-sized `Uint8ClampedArray` of length `width * height` in one forward loop over the source `Uint8ClampedArray` from `ImageData`.
 - **Rationale**: BT.601 weights are the long-standing default for general-purpose RGB→luma conversion and match common web/image-tool defaults (matches SC-004's "independently computed reference" expectation). A single forward loop with a pre-allocated destination buffer satisfies the zero-allocation-in-hot-loop principle.
 - **Alternatives considered**: BT.709 (HDTV) weights — close numerically, acceptable alternative but BT.601 is the more conventional default for generic image/graphics work and was chosen for the reference implementation; simple averaging `(R+G+B)/3` — rejected as it doesn't match perceptual luminance and would fail SC-004 against any standard reference.
 

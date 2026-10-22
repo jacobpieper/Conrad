@@ -1,14 +1,14 @@
 /**
  * Converts a flat RGBA buffer into a single-channel grayscale buffer using
  * ITU-R BT.601 luma weights, discarding alpha. Writes into `out` if provided
- * (reused pre-sized buffer), otherwise allocates a new `Uint8Array` once.
+ * (reused pre-sized buffer), otherwise allocates a new `Uint8ClampedArray` once.
  */
 export function toGrayscale(
   rgba: Uint8ClampedArray | Uint8Array,
   width: number,
   height: number,
-  out: Uint8Array = new Uint8Array(width * height)
-): Uint8Array {
+  out: Uint8ClampedArray = new Uint8ClampedArray(width * height)
+): Uint8ClampedArray {
   const pixelCount = width * height
   for (let i = 0; i < pixelCount; i++) {
     const offset = i * 4

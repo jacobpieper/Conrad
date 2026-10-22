@@ -18,7 +18,7 @@ describe('loadImageFromUrl', () => {
     expect(result.width).toBe(1)
     expect(result.height).toBe(1)
     expect(result.data.length).toBe(result.width * result.height)
-    expect(result.data).toBeInstanceOf(Uint8Array)
+    expect(result.data).toBeInstanceOf(Uint8ClampedArray)
     expect(result.data[0]).toBeGreaterThanOrEqual(0)
     expect(result.data[0]).toBeLessThanOrEqual(255)
   })

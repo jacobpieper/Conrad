@@ -8,7 +8,7 @@ Public TypeScript surface exported from `src/core/image-loader/index.ts`. This i
 type GrayscaleImage = {
   width: number
   height: number
-  data: Uint8Array // row-major, single-channel, length === width * height
+  data: Uint8ClampedArray // row-major, single-channel, length === width * height
 }
 
 type ImageLoadErrorReason =

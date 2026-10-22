@@ -5,5 +5,5 @@ export type ImageSource =
 export type GrayscaleImage = {
   width: number
   height: number
-  data: Uint8Array
+  data: Uint8ClampedArray
 }

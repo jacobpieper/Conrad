@@ -5,6 +5,8 @@ Public exports of `src/core/headless-renderer/index.ts`. All functions take the 
 ```ts
 import type { GrayscaleImage } from '../image-loader'
 
+// GrayscaleImage.data is a Uint8ClampedArray.
+
 type RendererErrorReason =
   | 'webgpu-unavailable' // no adapter / device request failed
   | 'invalid-image'      // bad dimensions or data.length mismatch

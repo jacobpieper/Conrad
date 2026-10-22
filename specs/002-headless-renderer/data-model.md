@@ -8,7 +8,7 @@ Types below describe shape and rules only. See [contracts/headless-renderer-api.
 |---|---|---|
 | `width` | `number` | Positive integer, `<= device.limits.maxTextureDimension2D` |
 | `height` | `number` | Positive integer, `<= device.limits.maxTextureDimension2D` |
-| `data` | `Uint8Array` | `data.length === width * height`, row-major, top-left origin, 8-bit intensity |
+| `data` | `Uint8ClampedArray` | `data.length === width * height`, row-major, top-left origin, 8-bit intensity |
 
 ## Viewport
 

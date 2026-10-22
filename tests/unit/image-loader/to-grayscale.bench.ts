@@ -21,7 +21,7 @@ describe('toGrayscale benchmark', () => {
     const width = 1920
     const height = 1080
     const rgba = new Uint8ClampedArray(width * height * 4).fill(128)
-    const out = new Uint8Array(width * height)
+    const out = new Uint8ClampedArray(width * height)
 
     const start = performance.now()
     const result = toGrayscale(rgba, width, height, out)
@@ -35,7 +35,7 @@ describe('toGrayscale benchmark', () => {
     const width = 256
     const height = 256
     const rgba = new Uint8ClampedArray(width * height * 4)
-    const out = new Uint8Array(width * height)
+    const out = new Uint8ClampedArray(width * height)
     toGrayscale(rgba, width, height, out)
 
     const allocating = maxHeapGrowth(() => {

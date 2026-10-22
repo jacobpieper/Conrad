@@ -30,7 +30,7 @@ describe('toGrayscale', () => {
 
   it('writes into a provided output buffer instead of allocating a new one', () => {
     const rgba = new Uint8ClampedArray([10, 20, 30, 255])
-    const out = new Uint8Array(1)
+    const out = new Uint8ClampedArray(1)
     const result = toGrayscale(rgba, 1, 1, out)
     expect(result).toBe(out)
   })
