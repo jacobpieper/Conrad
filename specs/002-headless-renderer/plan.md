@@ -1,5 +1,7 @@
 # Implementation Plan: Headless Renderer
 
+> **Superseded**: the WebGPU mechanism was replaced by Canvas 2D; see [005-canvas2d-pivot](../005-canvas2d-pivot/plan.md).
+
 **Branch**: `002-headless-renderer` | **Date**: 2026-10-22 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `/specs/002-headless-renderer/spec.md`, plus planning directives: native WebGPU only; expose `bindTarget`, `resize`, `updateBuffer`; all pipeline/shader/texture/buffer-mapping work internal; no Svelte code; at most 4 source files; image stored in an `r8unorm` texture uploaded with `writeTexture` (no storage buffer, no manual byte packing).

@@ -72,13 +72,13 @@ None. The two stories touch separate modules and do not block each other.
 
 ### Implementation for User Story 2
 
-- [ ] T011 [P] [US2] In `src/core/image-loader/types.ts` add `export type LoadImageOptions = { maxWidth?: number; maxHeight?: number }`; in `src/core/image-loader/errors.ts` add `'invalid-options'` to `ImageLoadErrorReason`; export `LoadImageOptions` from `src/core/image-loader/index.ts`
-- [ ] T012 [US2] In `src/core/image-loader/load-image.ts`: add a `resolveBounds(options)` helper that defaults each bound to 128 and throws `ImageLoadError('invalid-options')` unless each is a positive integer; add `options?: LoadImageOptions` as the second parameter of `loadImageFromUrl`, `loadImageFromBlob`, and `loadImage`, resolving it before any fetch or decode (after T011)
-- [ ] T013 [US2] In `decodeBlob` in `src/core/image-loader/load-image.ts`: `scale = Math.min(1, maxWidth / width, maxHeight / height)`; `targetWidth = Math.max(1, Math.floor(width * scale))`, same for height; create the `OffscreenCanvas` at the target size, set `imageSmoothingQuality = 'high'`, `drawImage(bitmap, 0, 0, targetWidth, targetHeight)`, `getImageData(0, 0, targetWidth, targetHeight)`, and return the target `width`/`height` with `toGrayscale` data (same file as T012)
-- [ ] T014 [US2] In `src/core/image-loader/load-image.ts` delete the `typeof OffscreenCanvas === 'undefined'` / `document.createElement('canvas')` branch and the `PixelContext` fallback typing; use `OffscreenCanvas` only (constitution VII zero shims) (same file as T013)
-- [ ] T015 [US2] In `tests/unit/image-loader/load-image.test.ts` add cases using canvas-encoded PNG fixtures: 4000x3000 with defaults gives 128x96; 300x100 gives 128x42; 64x32 is unchanged; `{ maxWidth: 50, maxHeight: 50 }` on 200x100 gives 50x25; each result has `data.length === width * height`; `{ maxWidth: 0 }`, `{ maxHeight: 1.5 }`, and `{ maxWidth: -1 }` reject with `reason: 'invalid-options'` and perform no network request
-- [ ] T016 [US2] Update the existing `large image performance` test in `tests/unit/image-loader/load-image.test.ts` (it expects 1920x1080 output) to pass `{ maxWidth: 1920, maxHeight: 1080 }` so it still measures full-size decode, and check other existing tests whose fixtures exceed 128 px for the same fix
-- [ ] T017 [US2] Run `fnm env --shell fish | source; and fnm use 24; and npx vitest run tests/unit/image-loader` and fix failures
+- [X] T011 [P] [US2] In `src/core/image-loader/types.ts` add `export type LoadImageOptions = { maxWidth?: number; maxHeight?: number }`; in `src/core/image-loader/errors.ts` add `'invalid-options'` to `ImageLoadErrorReason`; export `LoadImageOptions` from `src/core/image-loader/index.ts`
+- [X] T012 [US2] In `src/core/image-loader/load-image.ts`: add a `resolveBounds(options)` helper that defaults each bound to 128 and throws `ImageLoadError('invalid-options')` unless each is a positive integer; add `options?: LoadImageOptions` as the second parameter of `loadImageFromUrl`, `loadImageFromBlob`, and `loadImage`, resolving it before any fetch or decode (after T011)
+- [X] T013 [US2] In `decodeBlob` in `src/core/image-loader/load-image.ts`: `scale = Math.min(1, maxWidth / width, maxHeight / height)`; `targetWidth = Math.max(1, Math.floor(width * scale))`, same for height; create the `OffscreenCanvas` at the target size, set `imageSmoothingQuality = 'high'`, `drawImage(bitmap, 0, 0, targetWidth, targetHeight)`, `getImageData(0, 0, targetWidth, targetHeight)`, and return the target `width`/`height` with `toGrayscale` data (same file as T012)
+- [X] T014 [US2] In `src/core/image-loader/load-image.ts` delete the `typeof OffscreenCanvas === 'undefined'` / `document.createElement('canvas')` branch and the `PixelContext` fallback typing; use `OffscreenCanvas` only (constitution VII zero shims) (same file as T013)
+- [X] T015 [US2] In `tests/unit/image-loader/load-image.test.ts` add cases using canvas-encoded PNG fixtures: 4000x3000 with defaults gives 128x96; 300x100 gives 128x42; 64x32 is unchanged; `{ maxWidth: 50, maxHeight: 50 }` on 200x100 gives 50x25; each result has `data.length === width * height`; `{ maxWidth: 0 }`, `{ maxHeight: 1.5 }`, and `{ maxWidth: -1 }` reject with `reason: 'invalid-options'` and perform no network request
+- [X] T016 [US2] Update the existing `large image performance` test in `tests/unit/image-loader/load-image.test.ts` (it expects 1920x1080 output) to pass `{ maxWidth: 1920, maxHeight: 1080 }` so it still measures full-size decode, and check other existing tests whose fixtures exceed 128 px for the same fix
+- [X] T017 [US2] Run `fnm env --shell fish | source; and fnm use 24; and npx vitest run tests/unit/image-loader` and fix failures
 
 **Checkpoint**: Loader downscaling and validation work independently of the renderer.
 
@@ -86,9 +86,9 @@ None. The two stories touch separate modules and do not block each other.
 
 ## Phase 5: Polish & Cross-Cutting
 
-- [ ] T018 [P] Mark `specs/002-headless-renderer/spec.md` and `specs/002-headless-renderer/plan.md` as superseded by `specs/005-canvas2d-pivot`; add a note to `specs/001-image-loader/contracts/image-loader-api.md` pointing to the new options
-- [ ] T019 Run the full verification: `fnm env --shell fish | source; and fnm use 24; and npm test`, then `npm run typecheck` and `npm run lint` (separately, same prefix); resolve all errors
-- [ ] T020 Run the `quickstart.md` scenarios, including `grep -ri "webgpu\|gpu" src tests vitest.config.ts tsconfig.json package.json` returning nothing
+- [X] T018 [P] Mark `specs/002-headless-renderer/spec.md` and `specs/002-headless-renderer/plan.md` as superseded by `specs/005-canvas2d-pivot`; add a note to `specs/001-image-loader/contracts/image-loader-api.md` pointing to the new options
+- [X] T019 Run the full verification: `fnm env --shell fish | source; and fnm use 24; and npm test`, then `npm run typecheck` and `npm run lint` (separately, same prefix); resolve all errors
+- [X] T020 Run the `quickstart.md` scenarios, including `grep -ri "webgpu\|gpu" src tests vitest.config.ts tsconfig.json package.json` returning nothing
 - [ ] T021 Commit per constitution V with Conventional Commits under 50 characters (e.g. `refactor: move renderer to Canvas 2D`, `feat: downscale loaded images`, `chore: drop WebGPU tooling`)
 
 ---

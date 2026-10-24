@@ -1,5 +1,7 @@
 # API Contract: Image Loader Module
 
+> **Extended**: all loaders accept optional `{ maxWidth, maxHeight }` (default 128) and downscale oversized images; see [005 contract](../../005-canvas2d-pivot/contracts/image-loader-api.md).
+
 Public TypeScript surface exported from `src/core/image-loader/index.ts`. This is the contract downstream pipeline stages and the SvelteKit UI layer code against.
 
 ## Types

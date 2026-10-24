@@ -1,5 +1,7 @@
 # Feature Specification: Headless Renderer
 
+> **Superseded**: the WebGPU mechanism was replaced by Canvas 2D; see [005-canvas2d-pivot](../005-canvas2d-pivot/spec.md).
+
 **Feature Branch**: `[002-headless-renderer]`
 
 **Created**: 2026-10-22
