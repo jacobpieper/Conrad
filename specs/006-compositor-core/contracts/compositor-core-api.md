@@ -1,5 +1,7 @@
 # Contract: Compositor Core API
 
+> **Extended by 008**: per-layer integer offsets, `setLayerOffset`, and the `'invalid-offset'` error reason are added by [008-kinematic-controller](../../008-kinematic-controller/contracts/compositor-offsets-api.md); `compose` shifts layer reads by those offsets.
+
 Public exports of `src/core/compositor-core/index.ts`. Every function takes the state explicitly; there is no module-level state. Types are defined in [../data-model.md](../data-model.md).
 
 ```ts

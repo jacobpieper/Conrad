@@ -1,5 +1,7 @@
 # Data Model: Compositor Core
 
+> **Extended by 008**: `CompositorState` gains `offsetsX` and `offsetsY` (`Int32Array`, length `maxLayers`); see [008-kinematic-controller](../008-kinematic-controller/data-model.md).
+
 Contract signatures are in [contracts/compositor-core-api.md](./contracts/compositor-core-api.md).
 
 ## Types
