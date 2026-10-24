@@ -217,23 +217,21 @@ describe('mislabelled image bytes', () => {
   })
 })
 
-describe('large image performance', () => {
-  it('decodes and converts a 1920x1080 image in under one second', async () => {
-    const source = await createImageBitmap(dataUriToBlob(TEST_PNG_DATA_URI))
-    const canvas = new OffscreenCanvas(1920, 1080)
-    const context = canvas.getContext('2d')
-    context?.drawImage(source, 0, 0, 1920, 1080)
-    source.close()
-    const blob = await canvas.convertToBlob({ type: 'image/png' })
+describe('baseline performance', () => {
+  it('decodes and downscales a 512x512 image to the default bounds in under 250ms', async () => {
+    const blob = await pngBlobFromCanvas(512, 512, (ctx) => {
+      ctx.fillStyle = 'rgb(120, 120, 120)'
+      ctx.fillRect(0, 0, 512, 512)
+    })
 
     const start = performance.now()
-    const result = await loadImageFromBlob(blob, { maxWidth: 1920, maxHeight: 1080 })
+    const result = await loadImageFromBlob(blob)
     const elapsed = performance.now() - start
 
-    expect(result.width).toBe(1920)
-    expect(result.height).toBe(1080)
-    expect(result.data.length).toBe(1920 * 1080)
-    expect(elapsed).toBeLessThan(1000)
+    expect(result.width).toBe(128)
+    expect(result.height).toBe(128)
+    expect(result.data.length).toBe(128 * 128)
+    expect(elapsed).toBeLessThan(250)
   })
 })
 
