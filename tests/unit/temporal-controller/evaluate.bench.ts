@@ -37,17 +37,24 @@ function setup(): TemporalState {
 describe('evaluate benchmark', () => {
   it('evaluates 8 tracks of 16 keyframes within the time budget', () => {
     const state = setup()
+    const iterations = 1000
 
     const start = performance.now()
-    evaluate(state, 777)
-    const elapsed = performance.now() - start
-    // Budget leaves headroom for slower CI machines.
-    expect(elapsed).toBeLessThan(1)
+    for (let iteration = 0; iteration < iterations; iteration++) evaluate(state, iteration % 1600)
+    const perCall = (performance.now() - start) / iterations
+    // Measured ~0.0007ms per call; 0.05ms leaves wide headroom for slower CI machines.
+    expect(perCall).toBeLessThan(0.05)
   })
 
   it('has bounded JS heap growth across repeated evaluations', () => {
     const state = setup()
     let time = 0
+
+    // Warm-up lets JIT compilation settle so its allocations are not counted as growth.
+    for (let iteration = 0; iteration < 5000; iteration++) {
+      evaluate(state, time)
+      time = (time + 37) % 1600
+    }
 
     const allocatingControl = maxHeapGrowth(() => {
       evaluate(state, time)

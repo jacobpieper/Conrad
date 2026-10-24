@@ -126,3 +126,9 @@ Task: "Create src/core/temporal-controller/evaluate.ts" (T011)
 
 1. Add US2 (T008-T013) and validate tests plus benchmark
 2. Polish (T014-T016) and commit
+
+---
+
+## Phase 6: Convergence
+
+- [X] T017 Calibrate the time budget in `tests/unit/temporal-controller/evaluate.bench.ts` against a measured result: time a batch of repeated `evaluate` calls (for example 1000, divided by the count) so the number is stable, record the measured per-call figure and the chosen budget in the one-line comment (as `tests/unit/compositor-core/compose.bench.ts` does), and keep a budget with enough headroom that the single-call assertion is not flaky on slower machines, per T010 and T013 (partial)
