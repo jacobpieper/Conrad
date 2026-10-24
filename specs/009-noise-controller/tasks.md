@@ -129,3 +129,9 @@ Task: "Complete the noise configuration in controller.ts" (T010)
 
 1. Add US2 (T007-T014) and validate statistics, reproducibility, integration, and the benchmark
 2. Polish (T015-T017) and commit
+
+---
+
+## Phase 6: Convergence
+
+- [X] T018 Add a no-noise benchmark case to `tests/unit/noise-controller/process.bench.ts` for the table-only loop of `processFrame`: a 512x512 controller with the default dose (`Infinity`) and a non-default window and level, a per-frame time under a budget measured by temporarily asserting `expect(perFrame).toBe(-1)` (then restored) with the measured figure and chosen budget recorded in a one-line comment, and a heap-growth case (`maxHeapGrowth(run, 3, 100)` after a warm-up of `50` frames) asserting `< 100_000` bytes against the allocating control `> 100_000`, since the existing benchmark only exercises the noisy loop, per US1/AC6 and Constitution IV (partial)

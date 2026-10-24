@@ -16,8 +16,8 @@ function maxHeapGrowth(run: () => void, rounds = 5, iterations = 200): number {
   return growth
 }
 
-function setup(): { state: NoiseState; image: GrayscaleImage } {
-  const state = createNoiseController(512, 512, { dose: 1000, window: 200, level: 128, seed: 1 })
+function setup(dose = 1000): { state: NoiseState; image: GrayscaleImage } {
+  const state = createNoiseController(512, 512, { dose, window: 200, level: 128, seed: 1 })
   const image: GrayscaleImage = {
     width: 512,
     height: 512,
@@ -41,6 +41,37 @@ describe('processFrame benchmark', () => {
 
   it('has bounded JS heap growth across repeated frames', () => {
     const { state, image } = setup()
+
+    // Warm-up lets JIT compilation settle so its allocations are not counted as growth.
+    for (let iteration = 0; iteration < 50; iteration++) processFrame(state, image)
+
+    const allocatingControl = maxHeapGrowth(
+      () => {
+        processFrame(state, image)
+        new Array(1000).fill(0)
+      },
+      3,
+      100
+    )
+    const processGrowth = maxHeapGrowth(() => processFrame(state, image), 3, 100)
+
+    expect(allocatingControl).toBeGreaterThan(100_000)
+    expect(processGrowth).toBeLessThan(100_000)
+  })
+
+  it('processes a 512x512 frame without noise within the time budget', () => {
+    const { state, image } = setup(Infinity)
+    const iterations = 20
+
+    const start = performance.now()
+    for (let iteration = 0; iteration < iterations; iteration++) processFrame(state, image)
+    const perFrame = (performance.now() - start) / iterations
+    // Measured ~0.19ms per frame without noise; 2ms leaves headroom for slower CI machines.
+    expect(perFrame).toBeLessThan(2)
+  })
+
+  it('has bounded JS heap growth across repeated frames without noise', () => {
+    const { state, image } = setup(Infinity)
 
     // Warm-up lets JIT compilation settle so its allocations are not counted as growth.
     for (let iteration = 0; iteration < 50; iteration++) processFrame(state, image)
