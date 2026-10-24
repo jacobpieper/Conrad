@@ -63,6 +63,30 @@ describe('simulation orchestrator tick', () => {
     expect(Array.from(tick(engine, 0).data)).toEqual([0, 0, 0, 0])
   })
 
+  it('evaluates a temporal track without a kinematic track', async () => {
+    const engine = await makeEngine(1)
+    const layerId = registerLayer(engine.compositor, Uint8Array.from([0, 100, 200, 250]), 1)
+    addTemporalTrack(engine.temporal, layerId, [0, 1000], [0, 1])
+
+    expect(Array.from(tick(engine, 0).data)).toEqual([0, 0, 0, 0])
+    expect(Array.from(tick(engine, 500).data)).toEqual([0, 50, 100, 125])
+    expect(Array.from(tick(engine, 1000).data)).toEqual([0, 100, 200, 250])
+  })
+
+  it('evaluates a kinematic track without a temporal track', async () => {
+    const engine = await makeEngine(1)
+    registerLayer(engine.compositor, Uint8Array.from([0, 100, 200, 250]), 1)
+    addMotionTrack(engine.kinematic, 0, {
+      mode: 'linear',
+      times: [0, 1000],
+      x: [0, 1],
+      y: [0, 0]
+    })
+
+    expect(Array.from(tick(engine, 0).data)).toEqual([0, 100, 200, 250])
+    expect(Array.from(tick(engine, 1000).data)).toEqual([0, 0, 100, 200])
+  })
+
   it('preserves undriven layer settings and emits zero with no layers', async () => {
     const empty = await makeEngine(1)
     expect(Array.from(tick(empty, 25).data)).toEqual([0, 0, 0, 0])
@@ -87,6 +111,61 @@ describe('simulation orchestrator tick', () => {
     expect(Array.from(tick(engine, 1000).data)).toEqual([0, 100, 200, 250])
     expect(Array.from(tick(engine, 0).data)).toEqual([0, 0, 0, 0])
     expect(Array.from(tick(engine, 500).data)).toEqual(at500)
+  })
+
+  it('matches a fresh engine and separates clean from seeded noisy output', async () => {
+    const engine = await makeEngine(1)
+    const fresh = await makeEngine(1)
+    const pixels = Uint8Array.from([20, 80, 140, 220])
+    const engineLayer = registerLayer(engine.compositor, pixels, 1)
+    const freshLayer = registerLayer(fresh.compositor, Uint8Array.from(pixels), 1)
+    addTemporalTrack(engine.temporal, engineLayer, [0, 1000], [0, 1])
+    addTemporalTrack(fresh.temporal, freshLayer, [0, 1000], [0, 1])
+
+    expect(engine.compositor).not.toBe(fresh.compositor)
+    expect(engine.temporal).not.toBe(fresh.temporal)
+    expect(engine.noise).not.toBe(fresh.noise)
+    expect(engine.renderer).not.toBe(fresh.renderer)
+    expect(Array.from(tick(engine, 1000).data)).toEqual(Array.from(tick(fresh, 1000).data))
+    expect(Array.from(tick(engine, 0).data)).toEqual(Array.from(tick(fresh, 0).data))
+    const repeated = Array.from(tick(engine, 500).data)
+    expect(Array.from(tick(engine, 500).data)).toEqual(repeated)
+
+    const clean = await makeEngine(1)
+    const noisy = await createEngine({ width: 4, height: 1, maxLayers: 1, noise: { dose: 500, seed: 2024 } })
+    engines.push(noisy)
+    registerLayer(clean.compositor, Uint8Array.from(pixels), 1)
+    registerLayer(noisy.compositor, Uint8Array.from(pixels), 1)
+    expect(Array.from(tick(noisy, 0).data)).not.toEqual(Array.from(tick(clean, 0).data))
+  })
+
+  it('applies window-level mapping independently with noise disabled', async () => {
+    const engine = await makeEngine(1)
+    registerLayer(engine.compositor, Uint8Array.from([0, 50, 100, 200]), 1)
+    setWindowLevel(engine.noise, 100, 100)
+    compose(engine.compositor)
+    const expected = Array.from(
+      processFrame(createNoiseController(4, 1, { window: 100, level: 100 }), engine.compositor.output).data
+    )
+
+    expect(Array.from(tick(engine, 0).data)).toEqual(expected)
+  })
+
+  it('applies a track registered after ticking without affecting another engine', async () => {
+    const engine = await makeEngine(1)
+    const other = await makeEngine(1)
+    const pixels = Uint8Array.from([0, 100, 200, 250])
+    const layerId = registerLayer(engine.compositor, pixels, 1)
+    registerLayer(other.compositor, Uint8Array.from(pixels), 1)
+
+    expect(Array.from(tick(engine, 0).data)).toEqual([0, 100, 200, 250])
+    expect(Array.from(tick(other, 0).data)).toEqual([0, 100, 200, 250])
+    addTemporalTrack(engine.temporal, layerId, [0, 100], [0, 1])
+
+    expect(Array.from(tick(engine, 0).data)).toEqual([0, 0, 0, 0])
+    expect(Array.from(tick(other, 0).data)).toEqual([0, 100, 200, 250])
+    expect(engine.compositor).not.toBe(other.compositor)
+    expect(engine.temporal).not.toBe(other.temporal)
   })
 
   it('rejects invalid time before mutating controller or output state', async () => {

@@ -142,3 +142,13 @@ Task: "Create src/core/simulation-orchestrator/tick.ts" (T008)
 
 1. Add US3 (T011-T013) and validate the heap and time budget with the renderer included
 2. Polish (T014-T016) and commit
+
+---
+
+## Phase 7: Convergence
+
+- [X] T017 [US1] In `tests/unit/simulation-orchestrator/tick.test.ts` add a temporal-only test (4x1 engine, layer `[0, 100, 200, 250]` at weight `1`, `addTrack(engine.temporal, id, [0, 1000], [0, 1])`, no kinematic track) asserting the frames at `0`, `500`, and `1000` ms are exactly `[0, 0, 0, 0]`, `[0, 50, 100, 125]`, and `[0, 100, 200, 250]` per US1/AC2 and SC-002 (partial)
+- [X] T018 [US1] In `tests/unit/simulation-orchestrator/tick.test.ts` add a kinematic-only test (same layer, `addMotionTrack(engine.kinematic, id, { mode: 'linear', times: [0, 1000], x: [0, 1], y: [0, 0] })`, no temporal track) asserting the frame at `1000` ms is exactly `[0, 0, 100, 200]` with the vacated column `0` and the frame at `0` ms is `[0, 100, 200, 250]` per US1/AC3 and SC-002 (missing)
+- [X] T019 [US1] In `tests/unit/simulation-orchestrator/tick.test.ts` strengthen determinism and noise coverage per US1/AC5 and US1/AC8: consecutive `tick(engine, 500)` calls give identical bytes, a fresh engine with the same setup gives the same bytes as the scrubbed `tick(1000)` then `tick(0)` frame and shares no state object with the first, `setWindowLevel(engine.noise, 100, 100)` alone (dose `Infinity`) matches a standalone `processFrame` of `engine.compositor.output`, and a finite-dose engine with a fixed seed produces bytes that differ from the noise-free engine somewhere (partial)
+- [X] T020 [US1] In `tests/unit/simulation-orchestrator/tick.test.ts` add a mid-loop test per the spec edge case and quickstart 7: after ticking, register a temporal track on an existing layer and assert the next tick uses the new weights while an earlier-created second engine is unaffected (missing)
+- [X] T021 Re-run the `quickstart.md` scenarios 4, 5, 7, and 9 after T017 to T020 by running `fnm env --shell fish | source; and fnm use 24; and npx vitest run tests/unit/simulation-orchestrator`, then `npm run typecheck` and `npm run lint` each on their own, and confirm each expected outcome per T015 (partial)
