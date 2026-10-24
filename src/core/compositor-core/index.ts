@@ -5,6 +5,7 @@ export {
   setLayerWeight,
   unregisterLayer
 } from './layers'
+export { compose } from './compose'
 export { CompositorError } from './types'
 export type {
   CompositorErrorReason,
