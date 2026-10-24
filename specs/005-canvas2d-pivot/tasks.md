@@ -89,7 +89,7 @@ None. The two stories touch separate modules and do not block each other.
 - [X] T018 [P] Mark `specs/002-headless-renderer/spec.md` and `specs/002-headless-renderer/plan.md` as superseded by `specs/005-canvas2d-pivot`; add a note to `specs/001-image-loader/contracts/image-loader-api.md` pointing to the new options
 - [X] T019 Run the full verification: `fnm env --shell fish | source; and fnm use 24; and npm test`, then `npm run typecheck` and `npm run lint` (separately, same prefix); resolve all errors
 - [X] T020 Run the `quickstart.md` scenarios, including `grep -ri "webgpu\|gpu" src tests vitest.config.ts tsconfig.json package.json` returning nothing
-- [ ] T021 Commit per constitution V with Conventional Commits under 50 characters (e.g. `refactor: move renderer to Canvas 2D`, `feat: downscale loaded images`, `chore: drop WebGPU tooling`)
+- [X] T021 Commit per constitution V with Conventional Commits under 50 characters (e.g. `refactor: move renderer to Canvas 2D`, `feat: downscale loaded images`, `chore: drop WebGPU tooling`)
 
 ---
 
