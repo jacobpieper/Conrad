@@ -112,14 +112,20 @@ export function resize(state: RendererState, width: number, height: number): voi
   render(state)
 }
 
+type Context2DSource = {
+  getContext(
+    contextId: '2d',
+    options?: CanvasRenderingContext2DSettings
+  ): CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null
+}
+
 export function bindTarget(
   state: RendererState,
   canvas: HTMLCanvasElement | OffscreenCanvas
 ): void {
-  const context =
-    canvas instanceof OffscreenCanvas
-      ? canvas.getContext('2d', { alpha: false })
-      : canvas.getContext('2d', { alpha: false })
+  // The DOM union's getContext overloads collapse to a generic type; this narrows to the 2d overloads.
+  const source: Context2DSource = canvas
+  const context = source.getContext('2d', { alpha: false })
   if (context === null) {
     throw new RendererError('canvas-unavailable', 'Unable to get a 2D canvas context')
   }
