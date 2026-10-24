@@ -1,4 +1,5 @@
 export { addTrack, createTemporalController, removeTrack } from './tracks'
+export { evaluate } from './evaluate'
 export { TemporalError } from './types'
 export type {
   CompositorState,
