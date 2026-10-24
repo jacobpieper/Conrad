@@ -46,6 +46,8 @@ export function createCompositor(
     layers: new Array<LayerPixels | null>(maxLayers).fill(null),
     weights: new Float32Array(maxLayers),
     active: new Uint8Array(maxLayers),
+    offsetsX: new Int32Array(maxLayers),
+    offsetsY: new Int32Array(maxLayers),
     accumulator: new Float32Array(pixelCount),
     output: { width, height, data: new Uint8ClampedArray(pixelCount) }
   }
@@ -86,6 +88,8 @@ export function unregisterLayer(state: CompositorState, id: LayerId): void {
   state.layers[id] = null
   state.weights[id] = 0
   state.active[id] = 0
+  state.offsetsX[id] = 0
+  state.offsetsY[id] = 0
 }
 
 export function setLayerWeight(state: CompositorState, id: LayerId, weight: number): void {
@@ -97,4 +101,17 @@ export function setLayerWeight(state: CompositorState, id: LayerId, weight: numb
 export function setLayerActive(state: CompositorState, id: LayerId, active: boolean): void {
   assertOccupied(state, id)
   state.active[id] = active ? 1 : 0
+}
+
+function isInt32(value: number): boolean {
+  return Number.isInteger(value) && value >= -2147483648 && value <= 2147483647
+}
+
+export function setLayerOffset(state: CompositorState, id: LayerId, x: number, y: number): void {
+  assertOccupied(state, id)
+  if (!isInt32(x) || !isInt32(y)) {
+    throw new CompositorError('invalid-offset', 'Offsets must be integers within the int32 range')
+  }
+  state.offsetsX[id] = x
+  state.offsetsY[id] = y
 }

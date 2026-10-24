@@ -2,6 +2,7 @@ export {
   createCompositor,
   registerLayer,
   setLayerActive,
+  setLayerOffset,
   setLayerWeight,
   unregisterLayer
 } from './layers'

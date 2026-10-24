@@ -12,6 +12,8 @@ export type CompositorState = {
   layers: (LayerPixels | null)[]
   weights: Float32Array
   active: Uint8Array
+  offsetsX: Int32Array
+  offsetsY: Int32Array
   accumulator: Float32Array
   output: GrayscaleImage
 }
@@ -22,6 +24,7 @@ export type CompositorErrorReason =
   | 'invalid-weight'
   | 'capacity-exceeded'
   | 'unknown-layer'
+  | 'invalid-offset'
 
 export class CompositorError extends Error {
   readonly reason: CompositorErrorReason

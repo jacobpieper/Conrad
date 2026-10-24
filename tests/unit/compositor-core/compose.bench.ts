@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compose, createCompositor, registerLayer } from '../../../src/core/compositor-core'
+import { compose, createCompositor, registerLayer, setLayerOffset } from '../../../src/core/compositor-core'
 import type { CompositorState } from '../../../src/core/compositor-core'
 
 type MemoryPerformance = Performance & { memory: { usedJSHeapSize: number } }
@@ -25,6 +25,13 @@ function setup(): CompositorState {
   return state
 }
 
+function setupWithOffsets(): CompositorState {
+  const state = setup()
+  for (let layer = 0; layer < 8; layer++) setLayerOffset(state, layer, layer * 7 - 20, layer * 5 - 15)
+  compose(state)
+  return state
+}
+
 describe('compose benchmark', () => {
   it('composes 8 layers at 512x512 within the time budget', () => {
     const state = setup()
@@ -44,6 +51,31 @@ describe('compose benchmark', () => {
       new Array(1000).fill(0)
     })
     const composeGrowth = maxHeapGrowth(() => compose(state))
+
+    expect(allocatingControl).toBeGreaterThan(100_000)
+    expect(composeGrowth).toBeLessThan(100_000)
+  })
+
+  it('composes 8 offset layers at 512x512 within the time budget', () => {
+    const state = setupWithOffsets()
+
+    const start = performance.now()
+    compose(state)
+    const elapsed = performance.now() - start
+    expect(elapsed).toBeLessThan(10)
+  })
+
+  it('has bounded JS heap growth across repeated compositions with offsets', () => {
+    const state = setupWithOffsets()
+
+    // Warm-up lets JIT compilation settle so its allocations are not counted as growth.
+    for (let iteration = 0; iteration < 200; iteration++) compose(state)
+
+    const allocatingControl = maxHeapGrowth(() => {
+      compose(state)
+      new Array(1000).fill(0)
+    }, 3, 100)
+    const composeGrowth = maxHeapGrowth(() => compose(state), 3, 100)
 
     expect(allocatingControl).toBeGreaterThan(100_000)
     expect(composeGrowth).toBeLessThan(100_000)
