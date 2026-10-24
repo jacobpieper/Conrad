@@ -62,6 +62,7 @@ describe('compose benchmark', () => {
     const start = performance.now()
     compose(state)
     const elapsed = performance.now() - start
+    // Measured ~2.2ms locally with offsets; the same 10ms budget leaves headroom for slower CI machines.
     expect(elapsed).toBeLessThan(10)
   })
 
