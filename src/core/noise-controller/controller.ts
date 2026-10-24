@@ -18,6 +18,25 @@ function buildWindowTable(state: NoiseState): void {
   }
 }
 
+function validateDose(dose: number): void {
+  if (typeof dose !== 'number' || !(dose > 0)) {
+    throw new NoiseError('invalid-dose', 'dose must be a number > 0, or Infinity for no noise')
+  }
+}
+
+function validateSeed(seed: number): void {
+  if (!Number.isInteger(seed) || seed < 0 || seed > 4294967295) {
+    throw new NoiseError('invalid-seed', 'seed must be an integer in [0, 4294967295]')
+  }
+}
+
+function buildSigmaTable(state: NoiseState): void {
+  const finite = Number.isFinite(state.dose)
+  for (let value = 0; value < 256; value++) {
+    state.sigmaTable[value] = finite ? Math.sqrt((255 * value) / state.dose) : 0
+  }
+}
+
 export function createNoiseController(
   width: number,
   height: number,
@@ -28,7 +47,11 @@ export function createNoiseController(
   }
   const window = options?.window ?? defaultWindow
   const level = options?.level ?? defaultLevel
+  const dose = options?.dose ?? Infinity
+  const seed = options?.seed ?? defaultSeed
   validateWindowLevel(window, level)
+  validateDose(dose)
+  validateSeed(seed)
 
   const pixelCount = width * height
   const state: NoiseState = {
@@ -37,14 +60,15 @@ export function createNoiseController(
     pixelCount,
     window,
     level,
-    dose: Infinity,
+    dose,
     windowTable: new Uint8ClampedArray(256),
     sigmaTable: new Float32Array(256),
     rng: new Uint32Array(1),
     output: { width, height, data: new Uint8ClampedArray(pixelCount) }
   }
-  state.rng[0] = defaultSeed
+  state.rng[0] = seed
   buildWindowTable(state)
+  buildSigmaTable(state)
   return state
 }
 
@@ -53,4 +77,15 @@ export function setWindowLevel(state: NoiseState, window: number, level: number)
   state.window = window
   state.level = level
   buildWindowTable(state)
+}
+
+export function setDose(state: NoiseState, dose: number): void {
+  validateDose(dose)
+  state.dose = dose
+  buildSigmaTable(state)
+}
+
+export function reseed(state: NoiseState, seed: number): void {
+  validateSeed(seed)
+  state.rng[0] = seed
 }
