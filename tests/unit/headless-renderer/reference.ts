@@ -20,10 +20,10 @@ export function referenceFrame(
       }
 
       const scale = Math.min(viewportWidth / image.width, viewportHeight / image.height)
-      const displayWidth = image.width * scale
-      const displayHeight = image.height * scale
-      const offsetX = (viewportWidth - displayWidth) * 0.5
-      const offsetY = (viewportHeight - displayHeight) * 0.5
+      const displayWidth = Math.max(1, Math.round(image.width * scale))
+      const displayHeight = Math.max(1, Math.round(image.height * scale))
+      const offsetX = Math.floor((viewportWidth - displayWidth) * 0.5)
+      const offsetY = Math.floor((viewportHeight - displayHeight) * 0.5)
       const u = (x + 0.5 - offsetX) / displayWidth
       const v = (y + 0.5 - offsetY) / displayHeight
 

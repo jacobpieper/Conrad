@@ -22,9 +22,9 @@ description: "Task list for the Canvas 2D pivot"
 
 ## Phase 1: Setup (Remove WebGPU Tooling)
 
-- [ ] T001 [P] In `vitest.config.ts`, remove the launch args `--enable-unsafe-webgpu`, `--enable-features=Vulkan`, `--use-angle=vulkan`; keep `--enable-precise-memory-info`
-- [ ] T002 [P] In `tsconfig.json`, change `"types": ["@webgpu/types", "node"]` to `"types": ["node"]`
-- [ ] T003 Remove `@webgpu/types` from `devDependencies` in `package.json` and update the lockfile with `npm uninstall @webgpu/types` (after T002)
+- [X] T001 [P] In `vitest.config.ts`, remove the launch args `--enable-unsafe-webgpu`, `--enable-features=Vulkan`, `--use-angle=vulkan`; keep `--enable-precise-memory-info`
+- [X] T002 [P] In `tsconfig.json`, change `"types": ["@webgpu/types", "node"]` to `"types": ["node"]`
+- [X] T003 Remove `@webgpu/types` from `devDependencies` in `package.json` and update the lockfile with `npm uninstall @webgpu/types` (after T002)
 
 **Checkpoint**: `npm run typecheck` is expected to fail only in `src/core/headless-renderer` and its tests until US1 is done.
 
@@ -44,8 +44,8 @@ None. The two stories touch separate modules and do not block each other.
 
 ### Implementation for User Story 1
 
-- [ ] T004 [US1] Rewrite `src/core/headless-renderer/types.ts` per data-model.md: `ImageState` = `{ width, height, staging: OffscreenCanvas, stagingContext: OffscreenCanvasRenderingContext2D, pixels: ImageData, pixels32: Uint32Array }`; `TargetState` = `{ canvas: HTMLCanvasElement | OffscreenCanvas, context: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D }`; `RendererState` = `{ viewport, surface: OffscreenCanvas, surfaceContext: OffscreenCanvasRenderingContext2D, image, target }`; `RendererErrorReason` = `'canvas-unavailable' | 'invalid-image' | 'invalid-viewport' | 'invalid-output'`; keep `RendererError` and the `GrayscaleImage` re-export
-- [ ] T005 [US1] Rewrite `src/core/headless-renderer/renderer.ts` on Canvas 2D, keeping every exported function name and signature (`createRenderer` and `readSurface` stay Promise-returning):
+- [X] T004 [US1] Rewrite `src/core/headless-renderer/types.ts` per data-model.md: `ImageState` = `{ width, height, staging: OffscreenCanvas, stagingContext: OffscreenCanvasRenderingContext2D, pixels: ImageData, pixels32: Uint32Array }`; `TargetState` = `{ canvas: HTMLCanvasElement | OffscreenCanvas, context: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D }`; `RendererState` = `{ viewport, surface: OffscreenCanvas, surfaceContext: OffscreenCanvasRenderingContext2D, image, target }`; `RendererErrorReason` = `'canvas-unavailable' | 'invalid-image' | 'invalid-viewport' | 'invalid-output'`; keep `RendererError` and the `GrayscaleImage` re-export
+- [X] T005 [US1] Rewrite `src/core/headless-renderer/renderer.ts` on Canvas 2D, keeping every exported function name and signature (`createRenderer` and `readSurface` stay Promise-returning):
   - `validateViewport`: positive integers only (the device-limit check is removed); image validation: positive integers and `data.length === width * height`; both run before any mutation
   - `render`: fill the surface with `rgb(16, 16, 16)`; if an image exists, set `imageSmoothingEnabled = true` and `imageSmoothingQuality = 'high'`, compute contain-fit scale and centered offset, and `drawImage(staging, dx, dy, dw, dh)`; if a target is bound, `drawImage(surface, 0, 0)` onto the target context
   - `createRenderer`: create the surface `OffscreenCanvas` and its `2d` context (throw `RendererError('canvas-unavailable')` if the context is `null`), then render the blank frame
@@ -54,11 +54,11 @@ None. The two stories touch separate modules and do not block each other.
   - `bindTarget`: set canvas size to the viewport, `getContext('2d', { alpha: false })`, throw `'canvas-unavailable'` on `null` without disturbing the existing target, replace the target, render
   - `unbindTarget`: set `target = null`; `destroyRenderer`: set the surface (and staging) canvas sizes to 0 and null `image`/`target`
   - `readSurface`: length check against `width * height * 4` (`'invalid-output'`), `surfaceContext.getImageData(0, 0, width, height)` copied into `out`
-- [ ] T006 [P] [US1] Delete `src/core/headless-renderer/shader.ts`; in `src/core/headless-renderer/index.ts` keep the existing exports (no change expected beyond confirming nothing imports the shader)
-- [ ] T007 [US1] Adapt `tests/unit/headless-renderer/renderer.test.ts`: replace `renderer.device.limits.maxTextureDimension2D` checks (around lines 114 and 195) with fixed invalid cases (`0`, negative, fractional); rename the test at line 266 to expect `reason: 'canvas-unavailable'` (e.g. a canvas that already holds a `webgl2` context); keep exact-equality assertions for equal image/viewport sizes
-- [ ] T008 [US1] Update `tests/unit/headless-renderer/reference.ts` and the non-1:1 assertions in `tests/unit/headless-renderer/renderer.test.ts` to a per-channel tolerance measured against Chromium's `drawImage` bilinear output (research R4); letterbox pixels must remain exactly `16` with alpha `255`
-- [ ] T009 [US1] Adapt `tests/unit/headless-renderer/update-buffer.bench.ts`: drop the `device.queue.onSubmittedWorkDone()` calls and flush instead with a 1x1 `state.surface.getContext('2d')?.getImageData(0, 0, 1, 1)`; keep the 50 ms budget at 1920x1080 and the heap-growth assertion (`updateGrowth < 100_000`, control `> 100_000`)
-- [ ] T010 [US1] Run `fnm env --shell fish | source; and fnm use 24; and npx vitest run tests/unit/headless-renderer` and fix failures; if heap growth cannot stay bounded without breaking Principle I, halt and flag it (Principle VI)
+- [X] T006 [P] [US1] Delete `src/core/headless-renderer/shader.ts`; in `src/core/headless-renderer/index.ts` keep the existing exports (no change expected beyond confirming nothing imports the shader)
+- [X] T007 [US1] Adapt `tests/unit/headless-renderer/renderer.test.ts`: replace `renderer.device.limits.maxTextureDimension2D` checks (around lines 114 and 195) with fixed invalid cases (`0`, negative, fractional); rename the test at line 266 to expect `reason: 'canvas-unavailable'` (e.g. a canvas that already holds a `webgl2` context); keep exact-equality assertions for equal image/viewport sizes
+- [X] T008 [US1] Update `tests/unit/headless-renderer/reference.ts` and the non-1:1 assertions in `tests/unit/headless-renderer/renderer.test.ts` to a per-channel tolerance measured against Chromium's `drawImage` bilinear output (research R4); letterbox pixels must remain exactly `16` with alpha `255`
+- [X] T009 [US1] Adapt `tests/unit/headless-renderer/update-buffer.bench.ts`: drop the `device.queue.onSubmittedWorkDone()` calls and flush instead with a 1x1 `state.surface.getContext('2d')?.getImageData(0, 0, 1, 1)`; keep the 50 ms budget at 1920x1080 and the heap-growth assertion (`updateGrowth < 100_000`, control `> 100_000`)
+- [X] T010 [US1] Run `fnm env --shell fish | source; and fnm use 24; and npx vitest run tests/unit/headless-renderer` and fix failures; if heap growth cannot stay bounded without breaking Principle I, halt and flag it (Principle VI)
 
 **Checkpoint**: Renderer works on Canvas 2D and is independently verifiable.
 

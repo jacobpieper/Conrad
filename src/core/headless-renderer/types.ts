@@ -8,32 +8,27 @@ export type Viewport = {
 export type ImageState = {
   width: number
   height: number
-  texture: GPUTexture
-  bindGroup: GPUBindGroup
+  staging: OffscreenCanvas
+  stagingContext: OffscreenCanvasRenderingContext2D
+  pixels: ImageData
+  pixels32: Uint32Array
 }
 
 export type TargetState = {
   canvas: HTMLCanvasElement | OffscreenCanvas
-  context: GPUCanvasContext
+  context: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D
 }
 
 export type RendererState = {
-  device: GPUDevice
-  pipeline: GPURenderPipeline
-  bindGroupLayout: GPUBindGroupLayout
-  sampler: GPUSampler
-  uniformBuffer: GPUBuffer
-  uniformScratch: Float32Array
   viewport: Viewport
-  surface: GPUTexture
-  surfaceView: GPUTextureView
-  readbackBuffer: GPUBuffer
+  surface: OffscreenCanvas
+  surfaceContext: OffscreenCanvasRenderingContext2D
   image: ImageState | null
   target: TargetState | null
 }
 
 export type RendererErrorReason =
-  | 'webgpu-unavailable'
+  | 'canvas-unavailable'
   | 'invalid-image'
   | 'invalid-viewport'
   | 'invalid-output'

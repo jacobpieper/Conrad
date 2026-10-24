@@ -17,6 +17,11 @@ function maxHeapGrowth(run: () => void, rounds = 3, iterations = 100): number {
   return growth
 }
 
+// Canvas 2D work is deferred; a 1x1 readback forces it to complete.
+function flush(state: RendererState): void {
+  state.surfaceContext.getImageData(0, 0, 1, 1)
+}
+
 describe('updateBuffer benchmark', () => {
   let renderer: RendererState | undefined
 
@@ -33,7 +38,7 @@ describe('updateBuffer benchmark', () => {
       data: new Uint8ClampedArray(1920 * 1080).fill(128)
     }
     updateBuffer(renderer, image)
-    await renderer.device.queue.onSubmittedWorkDone()
+    flush(renderer)
     return { state: renderer, image }
   }
 
@@ -42,7 +47,7 @@ describe('updateBuffer benchmark', () => {
 
     const start = performance.now()
     updateBuffer(state, image)
-    await state.device.queue.onSubmittedWorkDone()
+    flush(state)
     const elapsed = performance.now() - start
 
     expect(elapsed).toBeLessThan(50)
@@ -56,7 +61,7 @@ describe('updateBuffer benchmark', () => {
       new Array(1000).fill(0)
     })
     const updateGrowth = maxHeapGrowth(() => updateBuffer(state, image))
-    await state.device.queue.onSubmittedWorkDone()
+    flush(state)
 
     expect(allocatingControl).toBeGreaterThan(100_000)
     expect(updateGrowth).toBeLessThan(100_000)

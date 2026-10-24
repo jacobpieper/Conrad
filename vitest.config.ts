@@ -9,12 +9,7 @@ export default defineConfig({
       enabled: true,
       provider: playwright({
         launchOptions: {
-          args: [
-            '--enable-precise-memory-info',
-            '--enable-unsafe-webgpu',
-            '--enable-features=Vulkan',
-            '--use-angle=vulkan'
-          ]
+          args: ['--enable-precise-memory-info']
         }
       }),
       headless: true,

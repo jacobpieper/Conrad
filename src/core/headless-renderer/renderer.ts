@@ -1,230 +1,110 @@
 import { RendererError } from './types'
 import type { GrayscaleImage, ImageState, RendererState, Viewport } from './types'
-import { rendererShader } from './shader'
 
 const bytesPerPixel = 4
-const bytesPerRowAlignment = 256
-const background = 16 / 255
+const background = 'rgb(16, 16, 16)'
+const opaqueBlack = 0xff000000
 
-function alignedBytesPerRow(width: number): number {
-  const bytesPerRow = width * bytesPerPixel
-  return Math.ceil(bytesPerRow / bytesPerRowAlignment) * bytesPerRowAlignment
-}
-
-function validateViewport(device: GPUDevice, width: number, height: number): void {
-  const maxDimension = device.limits.maxTextureDimension2D
-  if (
-    !Number.isInteger(width) ||
-    !Number.isInteger(height) ||
-    width <= 0 ||
-    height <= 0 ||
-    width > maxDimension ||
-    height > maxDimension
-  ) {
-    throw new RendererError(
-      'invalid-viewport',
-      `Viewport dimensions must be positive integers no greater than ${maxDimension}`
-    )
+function validateViewport(width: number, height: number): void {
+  if (!Number.isInteger(width) || !Number.isInteger(height) || width <= 0 || height <= 0) {
+    throw new RendererError('invalid-viewport', 'Viewport dimensions must be positive integers')
   }
 }
 
-function createSurfaceResources(
-  device: GPUDevice,
-  width: number,
-  height: number
-): { surface: GPUTexture; surfaceView: GPUTextureView; readbackBuffer: GPUBuffer } {
-  const surface = device.createTexture({
-    size: { width, height },
-    format: 'rgba8unorm',
-    usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC
-  })
-  const surfaceView = surface.createView()
-  const readbackBuffer = device.createBuffer({
-    size: alignedBytesPerRow(width) * height,
-    usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
-  })
-
-  return { surface, surfaceView, readbackBuffer }
-}
-
-function render(state: RendererState): void {
-  const encoder = state.device.createCommandEncoder()
-  const pass = encoder.beginRenderPass({
-    colorAttachments: [
-      {
-        view: state.surfaceView,
-        clearValue: { r: background, g: background, b: background, a: 1 },
-        loadOp: 'clear',
-        storeOp: 'store'
-      }
-    ]
-  })
-  if (state.image !== null) {
-    pass.setPipeline(state.pipeline)
-    pass.setBindGroup(0, state.image.bindGroup)
-    pass.draw(3)
-  }
-  pass.end()
-  if (state.target !== null) {
-    encoder.copyTextureToTexture(
-      { texture: state.surface },
-      { texture: state.target.context.getCurrentTexture() },
-      { width: state.viewport.width, height: state.viewport.height }
-    )
-  }
-  state.device.queue.submit([encoder.finish()])
-}
-
-function validateImage(state: RendererState, image: GrayscaleImage): void {
-  const maxDimension = state.device.limits.maxTextureDimension2D
+function validateImage(image: GrayscaleImage): void {
   if (
     !Number.isInteger(image.width) ||
     !Number.isInteger(image.height) ||
     image.width <= 0 ||
     image.height <= 0 ||
-    image.width > maxDimension ||
-    image.height > maxDimension ||
     image.data.length !== image.width * image.height
   ) {
     throw new RendererError(
       'invalid-image',
-      `Image dimensions must be positive integers no greater than ${maxDimension} and data length must equal width * height`
+      'Image dimensions must be positive integers and data length must equal width * height'
     )
   }
 }
 
-function createImageState(
-  state: RendererState,
-  image: GrayscaleImage,
-  texture: GPUTexture
-): ImageState {
-  const view = texture.createView()
-  const bindGroup = state.device.createBindGroup({
-    layout: state.bindGroupLayout,
-    entries: [
-      { binding: 0, resource: { buffer: state.uniformBuffer } },
-      { binding: 1, resource: state.sampler },
-      { binding: 2, resource: view }
-    ]
-  })
+function render(state: RendererState): void {
+  const { width, height } = state.viewport
+  const context = state.surfaceContext
+  context.fillStyle = background
+  context.fillRect(0, 0, width, height)
 
-  return { width: image.width, height: image.height, texture, bindGroup }
+  const image = state.image
+  if (image !== null) {
+    const scale = Math.min(width / image.width, height / image.height)
+    const displayWidth = Math.max(1, Math.round(image.width * scale))
+    const displayHeight = Math.max(1, Math.round(image.height * scale))
+    context.imageSmoothingEnabled = true
+    context.imageSmoothingQuality = 'high'
+    context.drawImage(
+      image.staging,
+      Math.floor((width - displayWidth) / 2),
+      Math.floor((height - displayHeight) / 2),
+      displayWidth,
+      displayHeight
+    )
+  }
+
+  state.target?.context.drawImage(state.surface, 0, 0)
+}
+
+function createImageState(image: GrayscaleImage): ImageState {
+  const staging = new OffscreenCanvas(image.width, image.height)
+  const stagingContext = staging.getContext('2d')
+  if (stagingContext === null) {
+    throw new RendererError('canvas-unavailable', 'Unable to get a 2D context for the staging canvas')
+  }
+  const pixels = stagingContext.createImageData(image.width, image.height)
+  return {
+    width: image.width,
+    height: image.height,
+    staging,
+    stagingContext,
+    pixels,
+    pixels32: new Uint32Array(pixels.data.buffer)
+  }
 }
 
 export async function createRenderer(width: number, height: number): Promise<RendererState> {
-  if (!Number.isInteger(width) || !Number.isInteger(height) || width <= 0 || height <= 0) {
-    throw new RendererError('invalid-viewport', 'Viewport dimensions must be positive integers')
+  validateViewport(width, height)
+
+  const surface = new OffscreenCanvas(width, height)
+  const surfaceContext = surface.getContext('2d', { alpha: false })
+  if (surfaceContext === null) {
+    throw new RendererError('canvas-unavailable', 'Unable to get a 2D context for the surface')
   }
 
-  let adapter: GPUAdapter | null
-  try {
-    adapter = await navigator.gpu.requestAdapter()
-  } catch (cause) {
-    throw new RendererError('webgpu-unavailable', 'Unable to request a WebGPU adapter', cause)
-  }
-  if (adapter === null) {
-    throw new RendererError('webgpu-unavailable', 'No WebGPU adapter is available')
-  }
-
-  let device: GPUDevice
-  try {
-    device = await adapter.requestDevice()
-  } catch (cause) {
-    throw new RendererError('webgpu-unavailable', 'Unable to request a WebGPU device', cause)
-  }
-
-  try {
-    validateViewport(device, width, height)
-  } catch (error) {
-    device.destroy()
-    throw error
-  }
-
-  const shaderModule = device.createShaderModule({ code: rendererShader })
-  const bindGroupLayout = device.createBindGroupLayout({
-    entries: [
-      { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' } },
-      { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } },
-      {
-        binding: 2,
-        visibility: GPUShaderStage.FRAGMENT,
-        texture: { sampleType: 'float', viewDimension: '2d' }
-      }
-    ]
-  })
-  const pipelineLayout = device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] })
-
-  let pipeline: GPURenderPipeline
-  try {
-    pipeline = await device.createRenderPipelineAsync({
-      layout: pipelineLayout,
-      vertex: { module: shaderModule, entryPoint: 'vertexMain' },
-      fragment: {
-        module: shaderModule,
-        entryPoint: 'fragmentMain',
-        targets: [{ format: 'rgba8unorm' }]
-      },
-      primitive: { topology: 'triangle-list' }
-    })
-  } catch (cause) {
-    device.destroy()
-    throw new RendererError('webgpu-unavailable', 'Unable to create the WebGPU render pipeline', cause)
-  }
-
-  const sampler = device.createSampler({
-    addressModeU: 'clamp-to-edge',
-    addressModeV: 'clamp-to-edge',
-    magFilter: 'linear',
-    minFilter: 'linear'
-  })
-  const uniformBuffer = device.createBuffer({
-    size: 8,
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-  })
-  const uniformScratch = new Float32Array([width, height])
-  device.queue.writeBuffer(uniformBuffer, 0, uniformScratch)
-  const surfaceResources = createSurfaceResources(device, width, height)
   const state: RendererState = {
-    device,
-    pipeline,
-    bindGroupLayout,
-    sampler,
-    uniformBuffer,
-    uniformScratch,
     viewport: { width, height },
-    ...surfaceResources,
+    surface,
+    surfaceContext,
     image: null,
     target: null
   }
-
   render(state)
   return state
 }
 
 export function destroyRenderer(state: RendererState): void {
-  state.target?.context.unconfigure()
-  state.image?.texture.destroy()
-  state.surface.destroy()
-  state.readbackBuffer.destroy()
-  state.uniformBuffer.destroy()
-  state.device.destroy()
+  state.target = null
+  if (state.image !== null) {
+    state.image.staging.width = 0
+    state.image = null
+  }
+  state.surface.width = 0
 }
 
 export function resize(state: RendererState, width: number, height: number): void {
-  validateViewport(state.device, width, height)
+  validateViewport(width, height)
   if (state.viewport.width === width && state.viewport.height === height) return
 
-  const nextResources = createSurfaceResources(state.device, width, height)
-  state.surface.destroy()
-  state.readbackBuffer.destroy()
   state.viewport.width = width
   state.viewport.height = height
-  state.surface = nextResources.surface
-  state.surfaceView = nextResources.surfaceView
-  state.readbackBuffer = nextResources.readbackBuffer
-  state.uniformScratch[0] = width
-  state.uniformScratch[1] = height
-  state.device.queue.writeBuffer(state.uniformBuffer, 0, state.uniformScratch)
+  state.surface.width = width
+  state.surface.height = height
   if (state.target !== null) {
     state.target.canvas.width = width
     state.target.canvas.height = height
@@ -236,58 +116,44 @@ export function bindTarget(
   state: RendererState,
   canvas: HTMLCanvasElement | OffscreenCanvas
 ): void {
-  canvas.width = state.viewport.width
-  canvas.height = state.viewport.height
-  const context = canvas.getContext('webgpu')
+  const context =
+    canvas instanceof OffscreenCanvas
+      ? canvas.getContext('2d', { alpha: false })
+      : canvas.getContext('2d', { alpha: false })
   if (context === null) {
-    throw new RendererError('webgpu-unavailable', 'Unable to get a WebGPU canvas context')
+    throw new RendererError('canvas-unavailable', 'Unable to get a 2D canvas context')
   }
 
-  context.configure({
-    device: state.device,
-    format: 'rgba8unorm',
-    alphaMode: 'opaque',
-    usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_DST
-  })
-  if (state.target?.context !== context) state.target?.context.unconfigure()
+  canvas.width = state.viewport.width
+  canvas.height = state.viewport.height
   state.target = { canvas, context }
   render(state)
 }
 
 export function unbindTarget(state: RendererState): void {
-  if (state.target === null) return
-  state.target.context.unconfigure()
   state.target = null
 }
 
 export function updateBuffer(state: RendererState, image: GrayscaleImage): void {
-  validateImage(state, image)
+  validateImage(image)
 
-  const previousImage = state.image
-  const reuseTexture =
-    previousImage !== null &&
-    previousImage.width === image.width &&
-    previousImage.height === image.height
-  const texture = reuseTexture
-    ? previousImage.texture
-    : state.device.createTexture({
-        size: { width: image.width, height: image.height },
-        format: 'r8unorm',
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
-      })
+  const previous = state.image
+  const next =
+    previous !== null && previous.width === image.width && previous.height === image.height
+      ? previous
+      : createImageState(image)
 
-  state.device.queue.writeTexture(
-    { texture },
-    image.data,
-    { bytesPerRow: image.width, rowsPerImage: image.height },
-    { width: image.width, height: image.height }
-  )
+  const source = image.data
+  const target = next.pixels32
+  for (let index = 0; index < target.length; index++) {
+    target[index] = opaqueBlack | ((source[index] ?? 0) * 0x010101)
+  }
+  next.stagingContext.putImageData(next.pixels, 0, 0)
 
-  const nextImage = reuseTexture
-    ? { ...previousImage, width: image.width, height: image.height }
-    : createImageState(state, image, texture)
-  state.image = nextImage
-  if (!reuseTexture) previousImage?.texture.destroy()
+  if (next !== previous) {
+    if (previous !== null) previous.staging.width = 0
+    state.image = next
+  }
   render(state)
 }
 
@@ -298,25 +164,7 @@ export async function readSurface(state: RendererState, out: Uint8Array): Promis
     throw new RendererError('invalid-output', `Output buffer length must equal ${expectedLength}`)
   }
 
-  const bytesPerRow = alignedBytesPerRow(width)
-  const encoder = state.device.createCommandEncoder()
-  encoder.copyTextureToBuffer(
-    { texture: state.surface },
-    { buffer: state.readbackBuffer, bytesPerRow, rowsPerImage: height },
-    { width, height }
-  )
-  state.device.queue.submit([encoder.finish()])
-  await state.readbackBuffer.mapAsync(GPUMapMode.READ)
-
-  const mapped = new Uint8Array(state.readbackBuffer.getMappedRange())
-  for (let y = 0; y < height; y++) {
-    const sourceRow = y * bytesPerRow
-    const destinationRow = y * width * bytesPerPixel
-    for (let x = 0; x < width * bytesPerPixel; x++) {
-      out[destinationRow + x] = mapped[sourceRow + x] ?? 0
-    }
-  }
-  state.readbackBuffer.unmap()
+  out.set(state.surfaceContext.getImageData(0, 0, width, height).data)
 }
 
 export type { Viewport }
