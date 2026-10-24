@@ -227,7 +227,7 @@ describe('large image performance', () => {
     const blob = await canvas.convertToBlob({ type: 'image/png' })
 
     const start = performance.now()
-    const result = await loadImageFromBlob(blob)
+    const result = await loadImageFromBlob(blob, { maxWidth: 1920, maxHeight: 1080 })
     const elapsed = performance.now() - start
 
     expect(result.width).toBe(1920)
@@ -235,5 +235,53 @@ describe('large image performance', () => {
     expect(result.data.length).toBe(1920 * 1080)
     expect(elapsed).toBeLessThan(1000)
   })
+})
+
+describe('max dimension downscaling', () => {
+  it.each([
+    { name: 'a 4000x3000 image with defaults', size: [4000, 3000], options: undefined, expected: [128, 96] },
+    { name: 'a 300x100 image with defaults', size: [300, 100], options: undefined, expected: [128, 42] },
+    { name: 'a 64x32 image within the default bounds', size: [64, 32], options: undefined, expected: [64, 32] },
+    { name: 'a 200x100 image with 50x50 bounds', size: [200, 100], options: { maxWidth: 50, maxHeight: 50 }, expected: [50, 25] },
+    { name: 'a 100x400 image with a width-only bound', size: [100, 400], options: { maxWidth: 200 }, expected: [32, 128] }
+  ])('loads $name at the expected size', async ({ size, options, expected }) => {
+    const [sourceWidth = 1, sourceHeight = 1] = size
+    const blob = await pngBlobFromCanvas(sourceWidth, sourceHeight, (ctx) => {
+      ctx.fillStyle = 'rgb(200, 200, 200)'
+      ctx.fillRect(0, 0, sourceWidth, sourceHeight)
+    })
+
+    const result = await loadImageFromBlob(blob, options)
+
+    expect([result.width, result.height]).toEqual(expected)
+    expect(result.data.length).toBe(result.width * result.height)
+  })
+
+  it('applies the options through loadImage and loadImageFromUrl', async () => {
+    const blob = await pngBlobFromCanvas(40, 20, (ctx) => ctx.fillRect(0, 0, 40, 20))
+    const viaBlob = await loadImage({ kind: 'blob', value: blob }, { maxWidth: 10, maxHeight: 10 })
+    expect([viaBlob.width, viaBlob.height]).toEqual([10, 5])
+
+    const url = URL.createObjectURL(blob)
+    try {
+      const viaUrl = await loadImage({ kind: 'url', value: url }, { maxWidth: 10, maxHeight: 10 })
+      expect([viaUrl.width, viaUrl.height]).toEqual([10, 5])
+    } finally {
+      URL.revokeObjectURL(url)
+    }
+  })
+
+  it.each([{ maxWidth: 0 }, { maxHeight: 1.5 }, { maxWidth: -1 }])(
+    'rejects invalid options %o before fetching or decoding',
+    async (options) => {
+      const unreachable = 'https://example.invalid/never-fetched.png'
+      await expect(loadImageFromUrl(unreachable, options)).rejects.toMatchObject({
+        reason: 'invalid-options'
+      } satisfies Partial<ImageLoadError>)
+      await expect(loadImageFromBlob(new Blob([]), options)).rejects.toMatchObject({
+        reason: 'invalid-options'
+      } satisfies Partial<ImageLoadError>)
+    }
+  )
 })
 

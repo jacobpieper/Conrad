@@ -1,10 +1,26 @@
-import type { GrayscaleImage, ImageSource } from './types'
+import type { GrayscaleImage, ImageSource, LoadImageOptions } from './types'
 import { ImageLoadError } from './errors'
 import { toGrayscale } from './to-grayscale'
 
-type PixelContext = Pick<CanvasRenderingContext2D, 'drawImage' | 'getImageData'>
+const defaultMaxDimension = 128
 
-async function decodeBlob(blob: Blob): Promise<GrayscaleImage> {
+type Bounds = { maxWidth: number; maxHeight: number }
+
+function resolveBounds(options: LoadImageOptions | undefined): Bounds {
+  const maxWidth = options?.maxWidth ?? defaultMaxDimension
+  const maxHeight = options?.maxHeight ?? defaultMaxDimension
+  if (
+    !Number.isInteger(maxWidth) ||
+    !Number.isInteger(maxHeight) ||
+    maxWidth <= 0 ||
+    maxHeight <= 0
+  ) {
+    throw new ImageLoadError('invalid-options', 'maxWidth and maxHeight must be positive integers')
+  }
+  return { maxWidth, maxHeight }
+}
+
+async function decodeBlob(blob: Blob, bounds: Bounds): Promise<GrayscaleImage> {
   if (blob.size === 0) {
     throw new ImageLoadError('empty-input', 'Cannot load an empty (zero-byte) image source')
   }
@@ -16,22 +32,16 @@ async function decodeBlob(blob: Blob): Promise<GrayscaleImage> {
     throw new ImageLoadError('decode-failed', 'Image decoding failed', cause)
   }
 
-  const { width, height } = bitmap
+  const scale = Math.min(1, bounds.maxWidth / bitmap.width, bounds.maxHeight / bitmap.height)
+  const width = Math.max(1, Math.floor(bitmap.width * scale))
+  const height = Math.max(1, Math.floor(bitmap.height * scale))
   try {
-    let ctx: PixelContext | null
-    if (typeof OffscreenCanvas === 'undefined') {
-      const canvas = document.createElement('canvas')
-      canvas.width = width
-      canvas.height = height
-      ctx = canvas.getContext('2d')
-    } else {
-      const canvas = new OffscreenCanvas(width, height)
-      ctx = canvas.getContext('2d')
-    }
+    const ctx = new OffscreenCanvas(width, height).getContext('2d')
     if (!ctx) {
       throw new ImageLoadError('decode-failed', 'Failed to acquire a 2D canvas context for pixel readback')
     }
-    ctx.drawImage(bitmap, 0, 0)
+    ctx.imageSmoothingQuality = 'high'
+    ctx.drawImage(bitmap, 0, 0, width, height)
 
     const imageData = ctx.getImageData(0, 0, width, height)
     const data = toGrayscale(imageData.data, width, height)
@@ -44,7 +54,11 @@ async function decodeBlob(blob: Blob): Promise<GrayscaleImage> {
   }
 }
 
-export async function loadImageFromUrl(url: string): Promise<GrayscaleImage> {
+export async function loadImageFromUrl(
+  url: string,
+  options?: LoadImageOptions
+): Promise<GrayscaleImage> {
+  const bounds = resolveBounds(options)
   if (url.length === 0) {
     throw new ImageLoadError('empty-input', 'Cannot load an image from an empty URL')
   }
@@ -65,13 +79,21 @@ export async function loadImageFromUrl(url: string): Promise<GrayscaleImage> {
   } catch (cause) {
     throw new ImageLoadError('network', `Failed to read image data from URL: ${url}`, cause)
   }
-  return decodeBlob(blob)
+  return decodeBlob(blob, bounds)
 }
 
-export async function loadImageFromBlob(blob: Blob): Promise<GrayscaleImage> {
-  return decodeBlob(blob)
+export async function loadImageFromBlob(
+  blob: Blob,
+  options?: LoadImageOptions
+): Promise<GrayscaleImage> {
+  return decodeBlob(blob, resolveBounds(options))
 }
 
-export async function loadImage(source: ImageSource): Promise<GrayscaleImage> {
-  return source.kind === 'url' ? loadImageFromUrl(source.value) : loadImageFromBlob(source.value)
+export async function loadImage(
+  source: ImageSource,
+  options?: LoadImageOptions
+): Promise<GrayscaleImage> {
+  return source.kind === 'url'
+    ? loadImageFromUrl(source.value, options)
+    : loadImageFromBlob(source.value, options)
 }

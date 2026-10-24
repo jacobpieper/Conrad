@@ -2,6 +2,7 @@ export type ImageLoadErrorReason =
   | 'network'
   | 'empty-input'
   | 'decode-failed'
+  | 'invalid-options'
 
 export class ImageLoadError extends Error {
   readonly reason: ImageLoadErrorReason
