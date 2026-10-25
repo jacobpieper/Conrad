@@ -110,7 +110,7 @@ The component is the only place that touches `HTMLCanvasElement`, `ResizeObserve
 - **FR-012**: Invalid grid dimensions MUST throw `ViewportError('invalid-grid')` at mount; failure to obtain the 2D context MUST throw `ViewportError('canvas-unavailable')`. Errors are thrown at the failing call; there are no retries or fallbacks.
 - **FR-013**: Nothing under `src/core/**` MAY import from `src/lib/**` or `svelte`; no public type of the component MAY reference `Event`, `MouseEvent`, `PointerEvent`, or `HTMLElement`; the component MUST use only vanilla CSS in its `<style>` block.
 - **FR-014**: The component MUST own no animation loop, timer, engine reference, or global state; the consumer decides when to call `render`.
-- **FR-015**: The repo MUST be a barebones SvelteKit project: `package.json` declares `@sveltejs/kit`, `@sveltejs/adapter-static`, `@sveltejs/vite-plugin-svelte`, `svelte`, and `svelte-check`; `svelte.config.js` and `vite.config.ts` exist; `src/app.html`, `src/app.d.ts`, and `src/routes/+layout.ts` (`ssr = false`), `+layout.svelte`, `+page.svelte` exist; `npm run build` produces a static client-only site; the existing `npm test`, `npm run typecheck`, and `npm run lint` keep passing.
+- **FR-015**: The repo MUST be a barebones SvelteKit project: `package.json` declares `@sveltejs/kit`, `@sveltejs/adapter-static`, `@sveltejs/vite-plugin-svelte`, `svelte`, and `svelte-check`; `vite.config.ts` carries the SvelteKit config (SvelteKit 3 does not support `svelte.config.js`); `src/app.html`, `src/app.d.ts`, and `src/routes/+layout.ts` (`ssr = false`), `+layout.svelte`, `+page.svelte` exist; `npm run build` produces a static client-only site; the existing `npm test`, `npm run typecheck`, and `npm run lint` keep passing.
 
 ## Success Criteria
 

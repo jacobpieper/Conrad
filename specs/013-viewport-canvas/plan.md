@@ -8,7 +8,7 @@
 
 Add a UI-layer module `src/lib/viewport/` that is the only boundary between the DOM and the engine. `Viewport.svelte` mounts one `<canvas>` inside a container. The canvas backing store is fixed at the engine's native `width x height`; CSS (never the backing store) scales it. A `ResizeObserver` on the container records the observed size, from which the component derives a uniform fit scale `s = min(cw / W, ch / H)` and sizes the canvas in CSS pixels. Pointer events are captured on the canvas; the canvas-local offset is projected to grid space by a pure per-axis function `toGrid(offset, cssExtent, gridExtent)` and dispatched as plain-number payloads: `onpointer({ x, y, buttons })` for the primary pointer (kinematic route) and `onwindow({ x, y, dx, dy })` while the middle button drags (windowing route). `render(frame)` validates a `GrayscaleImage`, expands it into a reusable `ImageData` through its `Uint32Array` view with a pure function `expandGrayscale`, and calls `putImageData`. Crispness comes from scoped `image-rendering: pixelated` plus `imageSmoothingEnabled = false`.
 
-The repo has no SvelteKit project yet, so the feature first scaffolds a barebones one beside `src/core`: dev dependencies, `svelte.config.js` (`adapter-static`, SPA fallback), `vite.config.ts` (`sveltekit()`), `src/app.html`, `src/app.d.ts`, and `src/routes/` (`+layout.ts` with `ssr = false`, `+layout.svelte`, `+page.svelte`). The existing `vitest.config.ts` stays separate and gains `svelte()` so tests compile the component.
+The repo has no SvelteKit project yet, so the feature first scaffolds a barebones one beside `src/core`: dev dependencies, `vite.config.ts` (`sveltekit({ adapter })` with `adapter-static`, SPA fallback; SvelteKit 3 rejects `svelte.config.js`), `src/app.html`, `src/app.d.ts`, and `src/routes/` (`+layout.ts` with `ssr = false`, `+layout.svelte`, `+page.svelte`). The existing `vitest.config.ts` stays separate and gains `svelte()` so tests compile the component.
 
 Everything DOM-shaped (`HTMLCanvasElement`, `ResizeObserver`, `PointerEvent`) stays inside the `.svelte` file; the projection, expansion, and payload types are plain TypeScript with no DOM or Svelte imports. `src/core` is not modified and never imports from `src/lib`.
 
@@ -66,8 +66,7 @@ specs/013-viewport-canvas/
 ### Source Code (repository root)
 
 ```text
-svelte.config.js         # adapter-static (SPA fallback), vitePreprocess
-vite.config.ts          # sveltekit() plugin
+vite.config.ts          # sveltekit({ adapter: adapter-static SPA fallback }); no svelte.config.js in Kit 3
 src/app.html            # document shell
 src/app.d.ts            # empty App namespace
 src/routes/
@@ -97,7 +96,7 @@ tests/setup/
 
 vitest.config.ts         # + svelte() plugin, + mouse command registration
 package.json             # + kit, adapter-static, vite-plugin-svelte, svelte, svelte-check; dev/build/preview/check/prepare scripts
-tsconfig.json            # extends ./.svelte-kit/tsconfig.json, keeps the strict flags and include
+tsconfig.json            # extends $app/tsconfig (Kit 3), types + $app/types, keeps the strict flags and include
 .gitignore               # + .svelte-kit/
 eslint.config.js         # unchanged (typed lint scope stays src/**/*.ts; .svelte is checked by svelte-check)
 ```

@@ -5,7 +5,7 @@ Validation guide for `src/lib/viewport/`. Contract: [contracts/viewport-api.md](
 ## Prerequisites
 
 - Node 24 via `fnm`, Playwright Chromium installed (existing setup).
-- SvelteKit skeleton present: dev dependencies `@sveltejs/kit`, `@sveltejs/adapter-static`, `@sveltejs/vite-plugin-svelte`, `svelte`, `svelte-check` in `package.json` (install with `--legacy-peer-deps` alongside the eslint tooling, per repo notes), plus `svelte.config.js`, `vite.config.ts`, `src/app.html`, `src/app.d.ts`, `src/routes/`.
+- SvelteKit skeleton present: dev dependencies `@sveltejs/kit`, `@sveltejs/adapter-static`, `@sveltejs/vite-plugin-svelte`, `svelte`, `svelte-check` in `package.json` (install with `--legacy-peer-deps` alongside the eslint tooling, per repo notes), plus `vite.config.ts` (Kit 3 takes its config there; `svelte.config.js` is rejected), `src/app.html`, `src/app.d.ts`, `src/routes/`.
 - `vitest.config.ts` includes the `svelte()` plugin and the real-mouse browser command.
 
 All commands run one at a time in Fish with the prefix `fnm env --shell fish | source; and fnm use 24; and`.
