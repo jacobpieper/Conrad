@@ -24,7 +24,7 @@ Expected: all pass; `build/` contains a static client-only site. The viewport su
 
 ## 1b. Scenario: SvelteKit skeleton
 
-`npm run dev` serves `/` with the placeholder page and no console errors; `npm run build` then `npm run preview` serves the same page from static files with no server code.
+`npm run dev` serves `/` with the Viewport harness, a rendered 64x64 grayscale frame, and no console errors; `npm run build` then `npm run preview` serves the same harness from static files with no server code.
 
 ## 2. Scenario: crisp, byte-exact rendering (User Story 1)
 
@@ -72,6 +72,6 @@ Run `expand.bench.ts` (part of `npm test`).
 
 Expected: `expandGrayscale` on 512x512 stays under the 1 ms budget and shows no heap growth over many iterations against an allocating control (same technique as the existing benchmarks).
 
-## 9. Optional integration check
+## 9. Integration check
 
-In any SvelteKit page that has an engine: mount `<Viewport width={w} height={h} bind:this={viewport} />`, then in a `requestAnimationFrame` callback call `viewport.render(tick(engine, t))`. The image appears enlarged with hard pixel edges, resizing the window keeps it centered and uniformly fit, and moving or middle-dragging over it produces payloads in engine pixel units.
+Open `/` with `npm run dev`. The page mounts `<Viewport width={64} height={64} bind:this={viewport} />`, renders a generated grayscale frame, and displays pointer and window-delta readouts. The image appears enlarged with hard pixel edges; resizing the window keeps it centered and uniformly fit; moving updates the pointer readout; middle-dragging updates the window readout without changing the pointer readout during the drag. In an application page with an engine, the consumer can instead call `viewport.render(tick(engine, t))` from its own `requestAnimationFrame` loop.
