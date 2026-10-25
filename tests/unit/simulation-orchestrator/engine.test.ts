@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CompositorError } from '../../../src/core/compositor-core'
+import { CaptureError } from '../../../src/core/frame-capture'
 import { RendererError } from '../../../src/core/headless-renderer'
 import { NoiseError } from '../../../src/core/noise-controller'
 import { TemporalError } from '../../../src/core/temporal-controller'
@@ -44,7 +45,36 @@ describe('simulation orchestrator engine', () => {
     expect(engine.previousFrame.length).toBe(engine.noise.pixelCount)
     expect(Array.from(engine.previousFrame)).toEqual(new Array(8).fill(0))
     expect(engine.previousFrame).not.toBe(engine.noise.output.data)
+    expect(engine.captureTargets).toEqual([])
     expect(engine.renderer.viewport).toEqual({ width: 4, height: 2 })
+  })
+
+  it('pre-allocates independent capture targets at image resolution', async () => {
+    const engine = await makeEngine({
+      width: 3,
+      height: 2,
+      maxLayers: 2,
+      viewportWidth: 8,
+      viewportHeight: 6,
+      captureTargets: [
+        { id: 'first', maxCapacity: 4, mode: 'stop' },
+        { id: 'second', maxCapacity: 2, mode: 'loop' }
+      ]
+    })
+
+    expect(engine.captureTargets.map(target => target.id)).toEqual(['first', 'second'])
+    expect(engine.captureTargets[0]?.buffer).toBeInstanceOf(Uint8ClampedArray)
+    expect(engine.captureTargets[0]?.buffer.length).toBe(24)
+    expect(engine.captureTargets[1]?.buffer.length).toBe(12)
+    expect(engine.captureTargets[0]?.buffer).not.toBe(engine.captureTargets[1]?.buffer)
+    expect(engine.captureTargets[0]?.buffer).not.toBe(engine.noise.output.data)
+    expect(engine.captureTargets[0]?.buffer).not.toBe(engine.previousFrame)
+    expect(engine.captureTargets[0]).toMatchObject({
+      isRecording: true,
+      headIndex: 0,
+      totalFramesRecorded: 0
+    })
+    expect(engine.renderer.viewport).toEqual({ width: 8, height: 6 })
   })
 
   it('uses supplied capacities, viewport, and noise options', async () => {
@@ -133,6 +163,12 @@ describe('simulation orchestrator engine', () => {
     await expect(createEngine({ ...base, noise: { dose: -1 } })).rejects.toMatchObject({ reason: 'invalid-dose' })
     await expect(createEngine({ ...base, viewportWidth: 0 })).rejects.toBeInstanceOf(RendererError)
     await expect(createEngine({ ...base, viewportWidth: 0 })).rejects.toMatchObject({ reason: 'invalid-viewport' })
+    await expect(createEngine({ ...base, captureTargets: [
+      { id: '', maxCapacity: 1, mode: 'stop' }
+    ] })).rejects.toBeInstanceOf(CaptureError)
+    await expect(createEngine({ ...base, captureTargets: [
+      { id: 'oversized', maxCapacity: Number.MAX_SAFE_INTEGER, mode: 'stop' }
+    ] })).rejects.toBeInstanceOf(RangeError)
 
     expect(canvasConstructions).toBe(0)
   })

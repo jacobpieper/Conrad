@@ -1,4 +1,5 @@
 import type { CompositorState } from '../compositor-core'
+import type { CaptureTarget, CaptureTargetConfig } from '../frame-capture'
 import type { RendererState } from '../headless-renderer'
 import type { GrayscaleImage } from '../image-loader'
 import type { KinematicState } from '../kinematic-controller'
@@ -14,6 +15,7 @@ export type EngineOptions = {
   viewportWidth?: number // Defaults to width
   viewportHeight?: number // Defaults to height
   noise?: NoiseOptions
+  captureTargets?: CaptureTargetConfig[] // Defaults to none
 }
 
 export type EngineState = {
@@ -24,6 +26,8 @@ export type EngineState = {
   renderer: RendererState
   // width * height bytes; holds the previous tick's final frame
   previousFrame: Uint8ClampedArray
+  // Same order as the options; assigned once and never replaced
+  captureTargets: CaptureTarget[]
 }
 
 export type SimulationErrorReason = 'invalid-time'
