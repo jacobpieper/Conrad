@@ -21,6 +21,8 @@
   let image: ImageData | undefined
   let pixels32: Uint32Array | undefined
   let windowing = false
+  let lastX = 0
+  let lastY = 0
   let scale = $derived(fitScale(containerWidth, containerHeight, width, height))
   let cssWidth = $derived(width * scale)
   let cssHeight = $derived(height * scale)
@@ -41,6 +43,13 @@
   function pointerDown(event: PointerEvent): void {
     if (!event.isPrimary || windowing) return
     canvas.setPointerCapture(event.pointerId)
+    if (event.button === 1) {
+      event.preventDefault()
+      windowing = true
+      lastX = toGrid(event.offsetX, cssWidth, width)
+      lastY = toGrid(event.offsetY, cssHeight, height)
+      return
+    }
     onpointer?.({
       x: toGrid(event.offsetX, cssWidth, width),
       y: toGrid(event.offsetY, cssHeight, height),
@@ -49,7 +58,15 @@
   }
 
   function pointerMove(event: PointerEvent): void {
-    if (!event.isPrimary || windowing) return
+    if (!event.isPrimary) return
+    if (windowing) {
+      const x = toGrid(event.offsetX, cssWidth, width)
+      const y = toGrid(event.offsetY, cssHeight, height)
+      onwindow?.({ x, y, dx: x - lastX, dy: y - lastY })
+      lastX = x
+      lastY = y
+      return
+    }
     onpointer?.({
       x: toGrid(event.offsetX, cssWidth, width),
       y: toGrid(event.offsetY, cssHeight, height),
@@ -58,12 +75,22 @@
   }
 
   function pointerUp(event: PointerEvent): void {
-    if (!event.isPrimary || windowing) return
+    if (!event.isPrimary) return
+    if (windowing) {
+      if (event.button === 1) windowing = false
+      return
+    }
     onpointer?.({
       x: toGrid(event.offsetX, cssWidth, width),
       y: toGrid(event.offsetY, cssHeight, height),
       buttons: event.buttons
     })
+  }
+
+  function pointerCancel(event: PointerEvent): void {
+    if (!event.isPrimary || !windowing) return
+    windowing = false
+    canvas.releasePointerCapture(event.pointerId)
   }
 
   onMount(() => {
@@ -114,6 +141,7 @@
     onpointerdown={pointerDown}
     onpointermove={pointerMove}
     onpointerup={pointerUp}
+    onpointercancel={pointerCancel}
   ></canvas>
 </div>
 
