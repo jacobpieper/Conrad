@@ -5,6 +5,10 @@
     "lib": ["ES2022", "DOM"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "paths": {
+      "$lib": ["./src/lib"],
+      "$lib/*": ["./src/lib/*"]
+    },
     "types": ["$app/types", "node"],
     "strict": true,
     "noUncheckedIndexedAccess": true,
