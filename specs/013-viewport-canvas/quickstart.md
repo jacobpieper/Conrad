@@ -5,20 +5,26 @@ Validation guide for `src/lib/viewport/`. Contract: [contracts/viewport-api.md](
 ## Prerequisites
 
 - Node 24 via `fnm`, Playwright Chromium installed (existing setup).
-- Dev dependencies `svelte`, `@sveltejs/vite-plugin-svelte`, `svelte-check` declared in `package.json` and installed (use `--legacy-peer-deps` alongside the eslint tooling, per repo notes).
+- SvelteKit skeleton present: dev dependencies `@sveltejs/kit`, `@sveltejs/adapter-static`, `@sveltejs/vite-plugin-svelte`, `svelte`, `svelte-check` in `package.json` (install with `--legacy-peer-deps` alongside the eslint tooling, per repo notes), plus `svelte.config.js`, `vite.config.ts`, `src/app.html`, `src/app.d.ts`, `src/routes/`.
 - `vitest.config.ts` includes the `svelte()` plugin and the real-mouse browser command.
 
 All commands run one at a time in Fish with the prefix `fnm env --shell fish | source; and fnm use 24; and`.
 
-## 1. Typecheck, lint, tests
+## 1. Typecheck, lint, svelte-check, tests, build
 
 ```text
 npm run typecheck
 npm run lint
+npm run check
 npm test
+npm run build
 ```
 
-Expected: all pass. The viewport suites are `tests/unit/viewport/*`.
+Expected: all pass; `build/` contains a static client-only site. The viewport suites are `tests/unit/viewport/*`. The pre-existing core suites still pass unchanged.
+
+## 1b. Scenario: SvelteKit skeleton
+
+`npm run dev` serves `/` with the placeholder page and no console errors; `npm run build` then `npm run preview` serves the same page from static files with no server code.
 
 ## 2. Scenario: crisp, byte-exact rendering (User Story 1)
 

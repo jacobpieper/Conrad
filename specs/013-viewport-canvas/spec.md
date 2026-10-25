@@ -110,6 +110,7 @@ The component is the only place that touches `HTMLCanvasElement`, `ResizeObserve
 - **FR-012**: Invalid grid dimensions MUST throw `ViewportError('invalid-grid')` at mount; failure to obtain the 2D context MUST throw `ViewportError('canvas-unavailable')`. Errors are thrown at the failing call; there are no retries or fallbacks.
 - **FR-013**: Nothing under `src/core/**` MAY import from `src/lib/**` or `svelte`; no public type of the component MAY reference `Event`, `MouseEvent`, `PointerEvent`, or `HTMLElement`; the component MUST use only vanilla CSS in its `<style>` block.
 - **FR-014**: The component MUST own no animation loop, timer, engine reference, or global state; the consumer decides when to call `render`.
+- **FR-015**: The repo MUST be a barebones SvelteKit project: `package.json` declares `@sveltejs/kit`, `@sveltejs/adapter-static`, `@sveltejs/vite-plugin-svelte`, `svelte`, and `svelte-check`; `svelte.config.js` and `vite.config.ts` exist; `src/app.html`, `src/app.d.ts`, and `src/routes/+layout.ts` (`ssr = false`), `+layout.svelte`, `+page.svelte` exist; `npm run build` produces a static client-only site; the existing `npm test`, `npm run typecheck`, and `npm run lint` keep passing.
 
 ## Success Criteria
 
@@ -117,17 +118,17 @@ The component is the only place that touches `HTMLCanvasElement`, `ResizeObserve
 - **SC-002**: At every tested container size, projecting a pointer at the canvas corners yields `(0, 0)` and `(W, H)` and the center yields `(W / 2, H / 2)`.
 - **SC-003**: Expanding a 512x512 frame meets the benchmark time budget (target under 1 ms) with no measurable JS heap growth over many iterations.
 - **SC-004**: A scripted middle drag of known path produces exactly the expected `onwindow` deltas and zero `onpointer` calls.
-- **SC-005**: `npm run typecheck`, `npm run lint`, and `npm test` pass.
+- **SC-005**: `npm run typecheck`, `npm run lint`, `npm run check` (svelte-check), `npm test`, and `npm run build` pass.
 
 ## Assumptions
 
-- `src/lib/viewport/` follows the SvelteKit `$lib` convention. This feature adds the Svelte compiler and Vite plugin but does not scaffold routes or an app shell (that belongs to a demo feature).
+- This feature scaffolds a barebones SvelteKit app (static adapter, SPA mode with `ssr = false`, one placeholder route) beside `src/core`, because the repo has none and Constitution III makes SvelteKit the sole UI framework. `src/lib/viewport/` is SvelteKit's `$lib`.
 - Chrome 120+, Firefox 125+, Safari 18+ (Constitution VII): `ResizeObserver` `contentBoxSize`, Pointer Events, and pointer capture are used without checks.
 - The frame comes from `tick`'s returned `GrayscaleImage`, not from the headless renderer's bound target; the engine's renderer and this component are independent draw paths.
 
 ## Out of Scope
 
-- Scaffolding SvelteKit routes, layouts, or a demo page.
+- Anything in the SvelteKit app beyond the barebones skeleton (placeholder route, layout, a manual-check page): no real demo, navigation, or engine wiring.
 - Owning or scheduling the render loop (`requestAnimationFrame`).
 - Converting `dx`/`dy` to window/level, or primary coordinates to kinematic tracks.
 - Integer-only scaling, zoom, pan, high-DPI backing stores, color, or keyboard input.
