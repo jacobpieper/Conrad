@@ -183,3 +183,11 @@ Task: "Add target allocation tests to tests/unit/simulation-orchestrator/engine.
 3. Add US4 (T019-T022): zero allocation and 5 ms budget confirmed with capture on
 4. Add US5 (T023-T024): pipeline untouched, pause and resume
 5. Polish (T025-T027) and commit
+
+---
+
+## Phase 9: Convergence
+
+- [X] T028 HIGH: Fix the failing test `pauses and resumes target recording through tick` in `tests/unit/simulation-orchestrator/tick.test.ts`: it registers a layer with no temporal track, so every tick returns `[0, 100, 200, 250]`, but it expects an all-zero buffer after the paused tick. Add `addTemporalTrack(engine.temporal, layerId, [0, 1000], [0, 1])`, then assert: `tick(engine, 500)` writes `[0, 50, 100, 125]` to slot 0; after `isRecording = false`, `tick(engine, 1000)` leaves slot 1 all zero with `headIndex` 1 and `totalFramesRecorded` 1; after `isRecording = true`, `tick(engine, 1000)` writes `[0, 100, 200, 250]` to slot 1 with `headIndex` 2 and `totalFramesRecorded` 2. Then run `npm test`, `npm run test:tick-bench`, `npm run typecheck`, and `npm run lint` each as its own command with output redirected to a file under `/tmp` and read back (terminal output was empty for several earlier runs, so exit success was never evidenced); all must pass, then commit (`test: fix pause resume capture test`) per SC-001, US5/AC3, T023-T025 (partial)
+- [X] T029 LOW: Replace the generic comment after the capture-only assertion in `tests/unit/simulation-orchestrator/tick.bench.ts` (`// The isolated capture loop stays below 0.1ms per 512x512 frame.`) with the actual measured per-capture cost from an isolated `npm run test:tick-bench` run, in one line like the existing `previousFrame` copy comment, per T020 / plan: Performance Goals (partial)
+- [X] T030 LOW: Extend `captures final frames into stop and loop targets` in `tests/unit/simulation-orchestrator/tick.test.ts` to assert every row of the contract worked example, not only the final state: after `tick(engine, 0)` both targets are `a, 0` / 1 / 1 / true; after `tick(engine, 500)` `first` is `a, b` / 2 / 2 / false and `last` is `a, b` / 0 / 2 / true; after `tick(engine, 1000)` the existing assertions hold; then `tick(engine, NaN)` throws `SimulationError` and both targets are unchanged, per quickstart scenario 6 / contracts/frame-capture-api.md worked example (partial)

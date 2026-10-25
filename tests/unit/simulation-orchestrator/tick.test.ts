@@ -110,8 +110,29 @@ describe('simulation orchestrator tick', () => {
     expect(loop).toBeDefined()
     if (stop === undefined || loop === undefined) return
 
-    tick(engine, 0)
-    tick(engine, 500)
+    const frameA = tick(engine, 0)
+    expect(Array.from(stop.buffer.subarray(0, 4))).toEqual(Array.from(frameA.data))
+    expect(Array.from(stop.buffer.subarray(4, 8))).toEqual([0, 0, 0, 0])
+    expect(stop.headIndex).toBe(1)
+    expect(stop.totalFramesRecorded).toBe(1)
+    expect(stop.isRecording).toBe(true)
+    expect(Array.from(loop.buffer.subarray(0, 4))).toEqual(Array.from(frameA.data))
+    expect(Array.from(loop.buffer.subarray(4, 8))).toEqual([0, 0, 0, 0])
+    expect(loop.headIndex).toBe(1)
+    expect(loop.totalFramesRecorded).toBe(1)
+    expect(loop.isRecording).toBe(true)
+
+    const frameB = tick(engine, 500)
+    expect(Array.from(stop.buffer.subarray(0, 4))).toEqual([0, 0, 0, 0])
+    expect(Array.from(stop.buffer.subarray(4, 8))).toEqual(Array.from(frameB.data))
+    expect(stop.headIndex).toBe(2)
+    expect(stop.totalFramesRecorded).toBe(2)
+    expect(stop.isRecording).toBe(false)
+    expect(Array.from(loop.buffer.subarray(0, 4))).toEqual([0, 0, 0, 0])
+    expect(Array.from(loop.buffer.subarray(4, 8))).toEqual(Array.from(frameB.data))
+    expect(loop.headIndex).toBe(0)
+    expect(loop.totalFramesRecorded).toBe(2)
+    expect(loop.isRecording).toBe(true)
     tick(engine, 1000)
 
     expect(Array.from(stop.buffer)).toEqual([0, 0, 0, 0, 0, 50, 100, 125])
@@ -126,6 +147,30 @@ describe('simulation orchestrator tick', () => {
     expect(loop.headIndex).toBe(1)
     expect(loop.totalFramesRecorded).toBe(3)
     expect(loop.isRecording).toBe(true)
+
+    const stopSnapshot = {
+      buffer: Array.from(stop.buffer),
+      headIndex: stop.headIndex,
+      totalFramesRecorded: stop.totalFramesRecorded,
+      isRecording: stop.isRecording
+    }
+    const loopSnapshot = {
+      buffer: Array.from(loop.buffer),
+      headIndex: loop.headIndex,
+      totalFramesRecorded: loop.totalFramesRecorded,
+      isRecording: loop.isRecording
+    }
+    expect(() => tick(engine, NaN)).toThrowError(
+      expect.objectContaining({ name: 'SimulationError', reason: 'invalid-time' })
+    )
+    expect(Array.from(stop.buffer)).toEqual(stopSnapshot.buffer)
+    expect(stop.headIndex).toBe(stopSnapshot.headIndex)
+    expect(stop.totalFramesRecorded).toBe(stopSnapshot.totalFramesRecorded)
+    expect(stop.isRecording).toBe(stopSnapshot.isRecording)
+    expect(Array.from(loop.buffer)).toEqual(loopSnapshot.buffer)
+    expect(loop.headIndex).toBe(loopSnapshot.headIndex)
+    expect(loop.totalFramesRecorded).toBe(loopSnapshot.totalFramesRecorded)
+    expect(loop.isRecording).toBe(loopSnapshot.isRecording)
   })
 
   it('captures the final noisy and windowed frame', async () => {
@@ -190,7 +235,8 @@ describe('simulation orchestrator tick', () => {
       { id: 'loop', maxCapacity: 3, mode: 'loop' },
       { id: 'stop', maxCapacity: 4, mode: 'stop' }
     ])
-    registerLayer(engine.compositor, Uint8Array.from([0, 100, 200, 250]), 1)
+    const layerId = registerLayer(engine.compositor, Uint8Array.from([0, 100, 200, 250]), 1)
+    addTemporalTrack(engine.temporal, layerId, [0, 1000], [0, 1])
     tick(engine, 0)
     const snapshots = engine.captureTargets.map(target => ({
       bytes: Array.from(target.buffer),
@@ -221,21 +267,22 @@ describe('simulation orchestrator tick', () => {
     const engine = await makeEngine(1, [
       { id: 'pausable', maxCapacity: 3, mode: 'stop' }
     ])
-    registerLayer(engine.compositor, Uint8Array.from([0, 100, 200, 250]), 1)
+    const layerId = registerLayer(engine.compositor, Uint8Array.from([0, 100, 200, 250]), 1)
+    addTemporalTrack(engine.temporal, layerId, [0, 1000], [0, 1])
     const target = engine.captureTargets[0]
     expect(target).toBeDefined()
     if (target === undefined) return
 
-    tick(engine, 0)
-    target.isRecording = false
     tick(engine, 500)
-    expect(Array.from(target.buffer)).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    target.isRecording = false
+    tick(engine, 1000)
+    expect(Array.from(target.buffer)).toEqual([0, 50, 100, 125, 0, 0, 0, 0, 0, 0, 0, 0])
     expect(target.headIndex).toBe(1)
     expect(target.totalFramesRecorded).toBe(1)
 
     target.isRecording = true
     tick(engine, 1000)
-    expect(Array.from(target.buffer.subarray(0, 4))).toEqual([0, 0, 0, 0])
+    expect(Array.from(target.buffer.subarray(0, 4))).toEqual([0, 50, 100, 125])
     expect(Array.from(target.buffer.subarray(4, 8))).toEqual([0, 100, 200, 250])
     expect(target.headIndex).toBe(2)
     expect(target.totalFramesRecorded).toBe(2)
