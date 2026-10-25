@@ -6,13 +6,13 @@ const coreSources = import.meta.glob('/src/core/**/*.ts', {
   query: '?raw',
   import: 'default',
   eager: true
-}) as Record<string, string>
+})
 
 const viewportSources = import.meta.glob('/src/lib/viewport/*.{ts,svelte}', {
   query: '?raw',
   import: 'default',
   eager: true
-}) as Record<string, string>
+})
 
 describe('viewport architecture boundary', () => {
   it('keeps core imports independent of Svelte and the viewport UI', () => {
@@ -20,7 +20,7 @@ describe('viewport architecture boundary', () => {
     expect(files.length).toBeGreaterThan(0)
 
     for (const [path, source] of files) {
-      expect(source, path).not.toMatch(/(?:from\s*|import\s*\()\s*['"](?:svelte|\$lib|@sveltejs|[^'"]*\/lib\/viewport|[^'"]*src\/lib)/)
+      expect(source, path).not.toMatch(/(?:from\s*|import\s*\()\s*['"](?:svelte|\$lib|#lib|@sveltejs|[^'"]*\/lib\/viewport|[^'"]*src\/lib)/)
     }
   })
 

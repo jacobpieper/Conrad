@@ -207,3 +207,15 @@ Task: "Create the src/routes skeleton" (T005)
 3. Add US4 (T031-T033): middle-drag windowing, exclusive of the primary route
 4. Add US5 (T034-T035): architectural boundary enforced by a test
 5. Polish (T036-T039): manual-check page, full verification, quickstart walkthrough, commits
+
+---
+
+## Phase 9: Convergence
+
+- [X] T040 MEDIUM: Added letterboxed pointer projection coverage for vertically centered letterboxing at `300 x 300`, margin suppression, corners, center, and a second aspect ratio at `200 x 400`. Pointer suite passes.
+- [X] T041 MEDIUM: Replaced deprecated `$lib` aliases with `#lib/viewport` package subpath imports in `package.json` and the route. Removed manual tsconfig paths and Vite alias. `npm run check` and `npm run build` pass without Kit alias warnings.
+- [X] T042 LOW: Added byte-exact read-back coverage for `1 x 1`, `3 x 2`, and `5 x 3` grids, including backing dimensions, grayscale channels and alpha. Viewport suite passes.
+- [X] T043 LOW: Added `tests/unit/viewport/render.bench.ts`; the 512x512 component render stays within 16.7ms and bounded heap growth versus an allocating control. Both benchmark cases pass.
+- [X] T044 LOW: Added a mixed-button windowing test; left down/up does not route to the pointer callback or alter nonzero middle-drag deltas. Windowing suite passes.
+- [X] T045 LOW: Removed both type assertions in `boundary.test.ts`; raw globs now infer their string values without casts.
+- [X] T046 LOW: Removed the unrequested `.prettierignore`; existing ignore rules and tool defaults cover this project.

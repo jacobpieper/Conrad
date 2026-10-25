@@ -5,8 +5,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [
     sveltekit({
-      adapter: adapter({ fallback: 'index.html' }),
-      alias: { $lib: 'src/lib' }
+      adapter: adapter({ fallback: 'index.html' })
     })
   ]
 })

@@ -39,6 +39,43 @@ describe('Viewport primary pointer routing', () => {
     expect(payloads.at(-1)?.y).toBeCloseTo(50, 2)
   })
 
+  it('projects letterboxed canvas corners and center without accepting margin input', async () => {
+    const payloads: PointerPayload[] = []
+    const mounted = mountViewport({
+      width: 100,
+      height: 50,
+      containerWidth: 300,
+      containerHeight: 300,
+      onpointer: (payload) => payloads.push(payload)
+    })
+    cleanup = mounted.unmount
+    await nextFrame()
+
+    const firstBounds = mounted.canvas.getBoundingClientRect()
+    expect(firstBounds.width).toBe(300)
+    expect(firstBounds.height).toBe(150)
+    await moveToCanvas(mounted.canvas, 0.01, 0.01)
+    expect(payloads.at(-1)?.x).toBeCloseTo(0, 2)
+    expect(payloads.at(-1)?.y).toBeCloseTo(0, 2)
+    await moveToCanvas(mounted.canvas, 150, 75)
+    expect(payloads.at(-1)).toEqual({ x: 50, y: 25, buttons: 0 })
+    await moveToCanvas(mounted.canvas, 299.99, 149.99)
+    expect(payloads.at(-1)?.x).toBeCloseTo(100, 2)
+    expect(payloads.at(-1)?.y).toBeCloseTo(50, 2)
+
+    const payloadCount = payloads.length
+    await commands.mouseMove(firstBounds.left + 150, firstBounds.top - 20)
+    expect(payloads).toHaveLength(payloadCount)
+
+    mounted.setContainerSize(200, 400)
+    await nextFrame()
+    const secondBounds = mounted.canvas.getBoundingClientRect()
+    expect(secondBounds.width).toBe(200)
+    expect(secondBounds.height).toBe(100)
+    await moveToCanvas(mounted.canvas, 100, 50)
+    expect(payloads.at(-1)).toEqual({ x: 50, y: 25, buttons: 0 })
+  })
+
   it('reports primary button states and captures a clamped drag outside the canvas', async () => {
     const payloads: PointerPayload[] = []
     const mounted = mountViewport({

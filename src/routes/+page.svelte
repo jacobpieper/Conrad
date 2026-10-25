@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { Viewport } from '$lib/viewport'
-  import type { GrayscaleImage, PointerPayload, WindowPayload } from '$lib/viewport'
+  import { Viewport } from '#lib/viewport'
+  import type { GrayscaleImage, PointerPayload, WindowPayload } from '#lib/viewport'
 
   let viewport: { render: (frame: GrayscaleImage) => void }
   let pointer = $state<PointerPayload | undefined>()

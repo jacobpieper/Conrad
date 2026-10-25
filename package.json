@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "imports": {
+    "#lib/viewport": "./src/lib/viewport/index.ts",
+    "#lib/viewport/*": "./src/lib/viewport/*"
+  },
   "engines": {
     "node": ">=24"
   },

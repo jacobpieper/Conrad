@@ -31,6 +31,32 @@ describe('Viewport rendering', () => {
     expect(readPixels(canvas)).toEqual(expandBytes(nextData))
   })
 
+  it.each([
+    { width: 1, height: 1 },
+    { width: 3, height: 2 },
+    { width: 5, height: 3 }
+  ])('renders a $width x $height grid byte-exactly', ({ width, height }) => {
+    const mounted = mountViewport({
+      width,
+      height,
+      containerWidth: width * 10,
+      containerHeight: height * 10
+    })
+    cleanup = mounted.unmount
+    const data = Uint8ClampedArray.from(
+      { length: width * height },
+      (_, index) => (index * 37 + 11) & 255
+    )
+
+    mounted.viewport.render({ width, height, data })
+
+    expect(mounted.canvas.width).toBe(width)
+    expect(mounted.canvas.height).toBe(height)
+    expect(readPixels(mounted.canvas)).toEqual(expandBytes(data))
+    cleanup()
+    cleanup = undefined
+  })
+
   it('rejects invalid frames without changing existing canvas pixels', () => {
     const mounted = mountViewport({ width: 2, height: 2, containerWidth: 40, containerHeight: 40 })
     cleanup = mounted.unmount

@@ -104,6 +104,40 @@ describe('Viewport middle-button windowing route', () => {
     expect(pointerPayloads.length).toBeGreaterThan(1)
     expect(windowPayloads).toHaveLength(0)
   })
+
+  it('ignores a left press and release while a middle drag continues', async () => {
+    const pointerPayloads: PointerPayload[] = []
+    const windowPayloads: WindowPayload[] = []
+    const mounted = mountViewport({
+      width: 100,
+      height: 50,
+      containerWidth: 200,
+      containerHeight: 100,
+      onpointer: (payload) => pointerPayloads.push(payload),
+      onwindow: (payload) => windowPayloads.push(payload)
+    })
+    cleanup = mounted.unmount
+    await nextFrame()
+    await moveToCanvas(mounted.canvas, 20, 20)
+    const pointerCount = pointerPayloads.length
+    await commands.mouseDown('middle')
+    await moveToCanvas(mounted.canvas, 40, 30)
+    const beforeLeftPress = windowPayloads.length
+
+    await commands.mouseDown('left')
+    await moveToCanvas(mounted.canvas, 60, 40)
+    await commands.mouseUp('left')
+    await moveToCanvas(mounted.canvas, 80, 50)
+
+    expect(pointerPayloads).toHaveLength(pointerCount)
+    const movementDeltas = windowPayloads
+      .slice(beforeLeftPress)
+      .filter((payload) => payload.dx !== 0 || payload.dy !== 0)
+    expect(movementDeltas).toEqual([
+      { x: 30, y: 20, dx: 10, dy: 5 },
+      { x: 40, y: 25, dx: 10, dy: 5 }
+    ])
+  })
 })
 
 async function moveToCanvas(canvas: HTMLCanvasElement, offsetX: number, offsetY: number): Promise<void> {
