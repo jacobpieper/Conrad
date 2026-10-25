@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte'
   import { expandGrayscale } from './expand'
-  import { fitScale } from './projection'
+  import { fitScale, toGrid } from './projection'
   import { ViewportError } from './types'
   import type { GrayscaleImage, PointerPayload, WindowPayload } from './types'
 
@@ -20,6 +20,7 @@
   let context: CanvasRenderingContext2D | undefined
   let image: ImageData | undefined
   let pixels32: Uint32Array | undefined
+  let windowing = false
   let scale = $derived(fitScale(containerWidth, containerHeight, width, height))
   let cssWidth = $derived(width * scale)
   let cssHeight = $derived(height * scale)
@@ -35,6 +36,34 @@
     ) {
       throw new ViewportError('invalid-grid', 'width and height must be positive integers')
     }
+  }
+
+  function pointerDown(event: PointerEvent): void {
+    if (!event.isPrimary || windowing) return
+    canvas.setPointerCapture(event.pointerId)
+    onpointer?.({
+      x: toGrid(event.offsetX, cssWidth, width),
+      y: toGrid(event.offsetY, cssHeight, height),
+      buttons: event.buttons
+    })
+  }
+
+  function pointerMove(event: PointerEvent): void {
+    if (!event.isPrimary || windowing) return
+    onpointer?.({
+      x: toGrid(event.offsetX, cssWidth, width),
+      y: toGrid(event.offsetY, cssHeight, height),
+      buttons: event.buttons
+    })
+  }
+
+  function pointerUp(event: PointerEvent): void {
+    if (!event.isPrimary || windowing) return
+    onpointer?.({
+      x: toGrid(event.offsetX, cssWidth, width),
+      y: toGrid(event.offsetY, cssHeight, height),
+      buttons: event.buttons
+    })
   }
 
   onMount(() => {
@@ -78,7 +107,14 @@
 </script>
 
 <div class="viewport" bind:this={container}>
-  <canvas bind:this={canvas} style:width="{cssWidth}px" style:height="{cssHeight}px"></canvas>
+  <canvas
+    bind:this={canvas}
+    style:width="{cssWidth}px"
+    style:height="{cssHeight}px"
+    onpointerdown={pointerDown}
+    onpointermove={pointerMove}
+    onpointerup={pointerUp}
+  ></canvas>
 </div>
 
 <style>

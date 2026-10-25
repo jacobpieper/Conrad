@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fitScale } from '../../../src/lib/viewport/projection'
+import { fitScale, toGrid } from '../../../src/lib/viewport/projection'
 
 describe('fitScale', () => {
   it('fits the grid uniformly within the container', () => {
@@ -22,5 +22,24 @@ describe('fitScale', () => {
   it('returns zero when either container extent is zero', () => {
     expect(fitScale(0, 100, 4, 2)).toBe(0)
     expect(fitScale(100, 0, 4, 2)).toBe(0)
+  })
+})
+
+describe('toGrid', () => {
+  it('projects CSS offsets to continuous grid coordinates', () => {
+    expect(toGrid(100, 200, 100)).toBe(50)
+    expect(toGrid(0, 200, 100)).toBe(0)
+    expect(toGrid(200, 200, 100)).toBe(100)
+    expect(toGrid(100, 400, 100)).toBe(25)
+    expect(toGrid(50, 400, 100)).toBe(12.5)
+  })
+
+  it('clamps offsets to the grid extent', () => {
+    expect(toGrid(-5, 200, 100)).toBe(0)
+    expect(toGrid(250, 200, 100)).toBe(100)
+  })
+
+  it('returns deterministic values for identical inputs', () => {
+    expect(toGrid(73, 260, 100)).toBe(toGrid(73, 260, 100))
   })
 })
