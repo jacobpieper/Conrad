@@ -80,7 +80,7 @@ No new dependencies, configuration, files in `src/`, or tooling are needed.
 
 **Goal**: Prove the copy creates no JS heap garbage and the tick stays within the existing 5 ms budget.
 
-**Independent Test**: `npx vitest run tests/unit/simulation-orchestrator/tick.bench.ts` passes: bounded heap growth against the allocating control, stable identities including `previousFrame`, and mean tick time under 5 ms.
+**Independent Test**: `npm run test:tick-bench` passes: bounded heap growth against the allocating control, stable identities including `previousFrame`, and mean tick time under 5 ms.
 
 ### Tests for User Story 3
 
@@ -134,3 +134,19 @@ Task: "Audit previousFrame writers in src/core/simulation-orchestrator/tick.ts" 
 1. Add US2 (T006-T009): type, size, identity, and between-tick checks
 2. Add US3 (T010-T012): zero-allocation and 5 ms budget confirmed with the copy included
 3. Polish (T013-T015) and commit
+
+---
+
+## Phase 7: Convergence
+
+- [X] T016 Correct the Phase 5 independent benchmark command in `tasks.md` to `npm run test:tick-bench`; `quickstart.md` and `spec.md` contain no stale direct command for the excluded benchmark
+- [X] T017 Record the dedicated benchmark config, package script, default-suite exclusion and rationale in `plan.md`; the dedicated command is the Constitution IV time and heap gate
+- [X] T018 Add the requested `previousFrame` field comment in `types.ts`
+- [X] T019 Remove `console.info` from `tick.bench.ts`, retain the `< 0.1` ms copy assertion, and record measured copy cost in a one-line comment
+
+---
+
+## Phase 8: Convergence
+
+- [ ] T020 CRITICAL: Commit the completed T016-T019 work per Constitution V, staging with `git add` as its own command and committing as its own command, using Conventional Commits under 50 characters (for example `docs: align previous frame plan and tasks` for `specs/011-previous-frame-state/plan.md` and `tasks.md`, and `chore: tidy previous frame benchmark` for `src/core/simulation-orchestrator/types.ts` and `tests/unit/simulation-orchestrator/tick.bench.ts`); do not stage `.specify/memory/constitution.md` (contradicts)
+- [ ] T021 Reconcile stale statements with the current files per plan: Summary / Structure Decision and research R8: in `plan.md` Summary replace "adds no files" with a statement that the change adds only `vitest.tick-bench.config.ts` plus its script and exclusion; in `tasks.md` update the "Prerequisites" line and Phase 1 text, which still say no configuration or tooling is needed; in `research.md` R8 record that a copy-only micro-benchmark with a 0.1 ms assertion was added alongside the unchanged 5 ms tick assertion (contradicts)

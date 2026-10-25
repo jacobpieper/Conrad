@@ -16,7 +16,7 @@ Add one pre-allocated `previousFrame: Uint8ClampedArray` to the engine state, si
 
 **Storage**: N/A (one extra typed array in `EngineState`)
 
-**Testing**: `vitest` Browser Mode with Playwright Chromium (existing); real buffers and a real renderer, no mocks; extend the existing orchestrator tests and `tick.bench.ts`.
+**Testing**: `vitest` Browser Mode with Playwright Chromium (existing); real buffers and a real renderer, no mocks; unit tests run through `npm test`; the time-sensitive `tick.bench.ts` is excluded from the parallel default pool and run with `npm run test:tick-bench` using `vitest.tick-bench.config.ts` (single worker, no file parallelism). `package.json` owns the script and `vitest.config.ts` excludes this benchmark from the default suite because parallel test load makes its strict 5 ms timing assertion unreliable. The dedicated command is the benchmark's authoritative time and heap gate (Constitution IV).
 
 **Target Platform**: Browser, client-side (unchanged)
 
@@ -69,9 +69,11 @@ tests/unit/simulation-orchestrator/
 ├── engine.test.ts   # previousFrame present, sized, zeroed
 ├── tick.test.ts     # copy contents, ordering, error path
 └── tick.bench.ts    # existing budget and heap checks cover the copy
+
+vitest.tick-bench.config.ts # single-worker isolated timing benchmark configuration
 ```
 
-**Structure Decision**: No new module or files. The feature is a field plus one line in the existing hot path, so it lives in the orchestrator that already owns `EngineState` and `tick`.
+**Structure Decision**: The engine feature itself adds no source module; it is a field plus one line in the existing hot path. The benchmark uses a dedicated config and package script because running the strict time gate alongside parallel unit tests produces contention-sensitive results.
 
 ## Open Flags for Human Review
 
