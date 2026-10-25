@@ -96,7 +96,7 @@ No new dependencies, configuration, files in `src/`, or tooling are needed.
 
 - [X] T013 Run full verification: `npm test` passes all 259 standard tests with the timing benchmark excluded; `npm run test:tick-bench` passes all 4 dedicated benchmark tests; `npm run typecheck` and `npm run lint` pass
 - [X] T014 Run the applicable `quickstart.md` scenarios 1-9 through engine/tick tests and focused benchmark; all specified buffer contents, identity, invalid-time, renderer and benchmark checks pass in the focused suite
-- [ ] T015 Commit per constitution V with Conventional Commits under 50 characters, staging with `git add` as its own command and committing as its own command: `feat: add previous frame buffer` followed by `test: cover previous frame state`
+- [X] T015 Commit per constitution V with Conventional Commits under 50 characters, staging with `git add` as its own command and committing as its own command: `feat: add previous frame buffer` followed by `test: isolate tick performance benchmark`
 
 ---
 
