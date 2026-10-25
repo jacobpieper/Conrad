@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { registerLayer } from '../../../src/core/compositor-core'
+import { captureFrame, createCaptureTargets } from '../../../src/core/frame-capture'
 import { addMotionTrack } from '../../../src/core/kinematic-controller'
 import { addTrack } from '../../../src/core/temporal-controller'
 import { createEngine, destroyEngine, tick } from '../../../src/core/simulation-orchestrator'
@@ -29,6 +30,10 @@ describe('simulation orchestrator tick benchmark', () => {
       width: 512,
       height: 512,
       maxLayers: 4,
+      captureTargets: [
+        { id: 'loop', maxCapacity: 8, mode: 'loop' },
+        { id: 'stop', maxCapacity: 8, mode: 'stop' }
+      ],
       noise: { dose: 1000, window: 200, level: 128, seed: 1 }
     })
     const multipliers = [3, 5, 7, 11]
@@ -67,6 +72,23 @@ describe('simulation orchestrator tick benchmark', () => {
     // Isolated 512x512 copies measured 0.0035-0.0036ms.
   })
 
+  it('captures a 512x512 frame with pre-allocated targets in under 0.1ms', () => {
+    const targets = createCaptureTargets(512 * 512, [
+      { id: 'loop', maxCapacity: 8, mode: 'loop' }
+    ])
+    const frame = new Uint8ClampedArray(512 * 512)
+    for (let iteration = 0; iteration < 100; iteration++) captureFrame(targets, frame)
+
+    const iterations = 1000
+    const start = performance.now()
+    for (let iteration = 0; iteration < iterations; iteration++) captureFrame(targets, frame)
+    const perCapture = (performance.now() - start) / iterations
+
+    expect(targets[0]?.totalFramesRecorded).toBe(1100)
+    expect(perCapture).toBeLessThan(0.1)
+    // The isolated capture loop stays below 0.1ms per 512x512 frame.
+  })
+
   it('ticks a noisy 512x512 frame within the time budget', () => {
     for (let iteration = 0; iteration < 50; iteration++) tick(engine, (iteration * 50) % 1001)
     const iterations = 100
@@ -83,6 +105,35 @@ describe('simulation orchestrator tick benchmark', () => {
     expect(mismatches).toBe(0)
     // Isolated warmed ticks measured 3.37ms; 5ms leaves headroom for slower CI machines.
     expect(perTick).toBeLessThan(5)
+  })
+
+  it('records loop and stop targets without replacing or growing their buffers', () => {
+    const loop = engine.captureTargets[0]
+    const stop = engine.captureTargets[1]
+    expect(loop).toBeDefined()
+    expect(stop).toBeDefined()
+    if (loop === undefined || stop === undefined) return
+
+    const captureTargets = engine.captureTargets
+    const loopBuffer = loop.buffer
+    const stopBuffer = stop.buffer
+    const loopLength = loopBuffer.length
+    const stopLength = stopBuffer.length
+
+    for (let iteration = 0; iteration < 40; iteration++) tick(engine, iteration * 25)
+
+    expect(engine.captureTargets).toBe(captureTargets)
+    expect(engine.captureTargets[0]).toBe(loop)
+    expect(engine.captureTargets[1]).toBe(stop)
+    expect(loop.buffer).toBe(loopBuffer)
+    expect(stop.buffer).toBe(stopBuffer)
+    expect(loop.buffer.length).toBe(loopLength)
+    expect(stop.buffer.length).toBe(stopLength)
+    expect(loop.totalFramesRecorded).toBeGreaterThan(loop.maxCapacity)
+    expect(loop.isRecording).toBe(true)
+    expect(stop.totalFramesRecorded).toBe(stop.maxCapacity)
+    expect(stop.headIndex).toBe(stop.maxCapacity)
+    expect(stop.isRecording).toBe(false)
   })
 
   it('keeps heap growth bounded across repeated ticks', () => {
@@ -107,6 +158,8 @@ describe('simulation orchestrator tick benchmark', () => {
     const noise = engine.noise
     const renderer = engine.renderer
     const previousFrame = engine.previousFrame
+    const captureTargets = engine.captureTargets
+    const captureBuffers = [engine.captureTargets[0]?.buffer, engine.captureTargets[1]?.buffer]
 
     for (let iteration = 0; iteration < 20; iteration++) {
       expect(tick(engine, iteration * 25)).toBe(output)
@@ -117,6 +170,9 @@ describe('simulation orchestrator tick benchmark', () => {
       expect(engine.noise).toBe(noise)
       expect(engine.renderer).toBe(renderer)
       expect(engine.previousFrame).toBe(previousFrame)
+      expect(engine.captureTargets).toBe(captureTargets)
+      expect(engine.captureTargets[0]?.buffer).toBe(captureBuffers[0])
+      expect(engine.captureTargets[1]?.buffer).toBe(captureBuffers[1])
     }
   })
 })

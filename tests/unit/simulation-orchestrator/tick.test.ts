@@ -110,9 +110,9 @@ describe('simulation orchestrator tick', () => {
     expect(loop).toBeDefined()
     if (stop === undefined || loop === undefined) return
 
-    const frameA = tick(engine, 0)
-    const frameB = tick(engine, 500)
-    const frameC = tick(engine, 1000)
+    tick(engine, 0)
+    tick(engine, 500)
+    tick(engine, 1000)
 
     expect(Array.from(stop.buffer)).toEqual([0, 0, 0, 0, 0, 50, 100, 125])
     expect(Array.from(stop.buffer.subarray(0, 4))).toEqual([0, 0, 0, 0])
@@ -144,6 +144,102 @@ describe('simulation orchestrator tick', () => {
 
     expect(Array.from(target.buffer.subarray(0, 4))).toEqual(Array.from(result.data))
     expect(Array.from(target.buffer.subarray(0, 4))).toEqual(Array.from(engine.previousFrame))
+  })
+
+  it('preserves outputs and stable capture identities across ticks', async () => {
+    const withCapture = await makeEngine(1, [
+      { id: 'stable', maxCapacity: 4, mode: 'loop' }
+    ])
+    const withoutCapture = await makeEngine(1)
+    const pixels = Uint8Array.from([20, 80, 140, 220])
+    const captureLayer = registerLayer(withCapture.compositor, pixels, 1)
+    const plainLayer = registerLayer(withoutCapture.compositor, Uint8Array.from(pixels), 1)
+    addTemporalTrack(withCapture.temporal, captureLayer, [0, 1000], [0, 1])
+    addTemporalTrack(withoutCapture.temporal, plainLayer, [0, 1000], [0, 1])
+    setDose(withCapture.noise, 500)
+    setDose(withoutCapture.noise, 500)
+    reseed(withCapture.noise, 2024)
+    reseed(withoutCapture.noise, 2024)
+
+    const targetList = withCapture.captureTargets
+    const target = withCapture.captureTargets[0]
+    expect(target).toBeDefined()
+    if (target === undefined) return
+    const buffer = target.buffer
+    const capturedOutput = tick(withCapture, 500)
+    const plainOutput = tick(withoutCapture, 500)
+    expect(Array.from(capturedOutput.data)).toEqual(Array.from(plainOutput.data))
+    expect(capturedOutput).toBe(withCapture.noise.output)
+    expect(capturedOutput.data).not.toBe(buffer)
+
+    const output = capturedOutput
+    const outputData = capturedOutput.data
+    for (const timeMs of [0, 1000, 500, 250]) {
+      expect(tick(withCapture, timeMs)).toBe(output)
+      expect(tick(withoutCapture, timeMs)).toBe(plainOutput)
+      expect(Array.from(capturedOutput.data)).toEqual(Array.from(plainOutput.data))
+      expect(capturedOutput.data).toBe(outputData)
+      expect(withCapture.captureTargets).toBe(targetList)
+      expect(withCapture.captureTargets[0]).toBe(target)
+      expect(target.buffer).toBe(buffer)
+    }
+  })
+
+  it('leaves capture targets unchanged for invalid time values', async () => {
+    const engine = await makeEngine(1, [
+      { id: 'loop', maxCapacity: 3, mode: 'loop' },
+      { id: 'stop', maxCapacity: 4, mode: 'stop' }
+    ])
+    registerLayer(engine.compositor, Uint8Array.from([0, 100, 200, 250]), 1)
+    tick(engine, 0)
+    const snapshots = engine.captureTargets.map(target => ({
+      bytes: Array.from(target.buffer),
+      isRecording: target.isRecording,
+      headIndex: target.headIndex,
+      totalFramesRecorded: target.totalFramesRecorded
+    }))
+
+    for (const timeMs of [NaN, Infinity, -Infinity]) {
+      expect(() => tick(engine, timeMs)).toThrowError(
+        expect.objectContaining({ name: 'SimulationError', reason: 'invalid-time' })
+      )
+      for (let index = 0; index < engine.captureTargets.length; index++) {
+        const target = engine.captureTargets[index]
+        const snapshot = snapshots[index]
+        expect(target).toBeDefined()
+        expect(snapshot).toBeDefined()
+        if (target === undefined || snapshot === undefined) continue
+        expect(Array.from(target.buffer)).toEqual(snapshot.bytes)
+        expect(target.isRecording).toBe(snapshot.isRecording)
+        expect(target.headIndex).toBe(snapshot.headIndex)
+        expect(target.totalFramesRecorded).toBe(snapshot.totalFramesRecorded)
+      }
+    }
+  })
+
+  it('pauses and resumes target recording through tick', async () => {
+    const engine = await makeEngine(1, [
+      { id: 'pausable', maxCapacity: 3, mode: 'stop' }
+    ])
+    registerLayer(engine.compositor, Uint8Array.from([0, 100, 200, 250]), 1)
+    const target = engine.captureTargets[0]
+    expect(target).toBeDefined()
+    if (target === undefined) return
+
+    tick(engine, 0)
+    target.isRecording = false
+    tick(engine, 500)
+    expect(Array.from(target.buffer)).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    expect(target.headIndex).toBe(1)
+    expect(target.totalFramesRecorded).toBe(1)
+
+    target.isRecording = true
+    tick(engine, 1000)
+    expect(Array.from(target.buffer.subarray(0, 4))).toEqual([0, 0, 0, 0])
+    expect(Array.from(target.buffer.subarray(4, 8))).toEqual([0, 100, 200, 250])
+    expect(target.headIndex).toBe(2)
+    expect(target.totalFramesRecorded).toBe(2)
+    expect(target.isRecording).toBe(true)
   })
 
   it('evaluates a kinematic track without a temporal track', async () => {

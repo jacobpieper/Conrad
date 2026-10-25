@@ -112,10 +112,10 @@ description: "Task list for frame-capture"
 
 ### Tests for User Story 4
 
-- [ ] T019 [P] [US4] Extend `tests/unit/simulation-orchestrator/tick.bench.ts`: add `captureTargets` of one loop target and one stop target, each with `maxCapacity: 8`, to the 512x512 benchmark engine options (about 2 MB each); keep the existing 5 ms and under-100 KB heap assertions and the allocating control unchanged; ensure the measured loop runs long enough to wrap the loop target several times and halt the stop target (assert `isRecording` false for the stop target and `totalFramesRecorded` greater than `maxCapacity` for the loop target after the run); assert each target and its `buffer` are the same instances with the same lengths before and after (US4/3). Remove any new `console.info` (depends on T013)
-- [ ] T020 [P] [US4] In the same file add a capture-only micro-benchmark that calls `captureFrame` on a loop target of capacity 8 with a 512x512 frame, warmed up, and asserts mean time under 0.1 ms per call, with a one-line comment recording the measured cost (depends on T017)
-- [ ] T021 [US4] Audit `src/core/frame-capture/capture.ts` and the `tick.ts` diff against the hot-path list in the Format section: one indexed `for`, one `.set(frame, offset)` per recording target, integer counter updates only, no new allocation construct, no `buffer` reassignment or resizing anywhere in `src/` (grep for `.buffer =` and `new Uint8ClampedArray` outside `create.ts`/`engine.ts`) (depends on T017, T013)
-- [ ] T022 [US4] Run `fnm env --shell fish | source; and fnm use 24; and npm run test:tick-bench`; fix failures. If the heap or time assertion fails and cannot be fixed without allocation or breaking a constitution principle, halt and flag it (Principle VI) (depends on T019, T020, T021)
+- [X] T019 [P] [US4] Extend `tests/unit/simulation-orchestrator/tick.bench.ts`: add `captureTargets` of one loop target and one stop target, each with `maxCapacity: 8`, to the 512x512 benchmark engine options (about 2 MB each); keep the existing 5 ms and under-100 KB heap assertions and the allocating control unchanged; ensure the measured loop runs long enough to wrap the loop target several times and halt the stop target (assert `isRecording` false for the stop target and `totalFramesRecorded` greater than `maxCapacity` for the loop target after the run); assert each target and its `buffer` are the same instances with the same lengths before and after (US4/3). Remove any new `console.info` (depends on T013)
+- [X] T020 [P] [US4] In the same file add a capture-only micro-benchmark that calls `captureFrame` on a loop target of capacity 8 with a 512x512 frame, warmed up, and asserts mean time under 0.1 ms per call, with a one-line comment recording the measured cost (depends on T017)
+- [X] T021 [US4] Audit `src/core/frame-capture/capture.ts` and the `tick.ts` diff against the hot-path list in the Format section: one indexed `for`, one `.set(frame, offset)` per recording target, integer counter updates only, no new allocation construct, no `buffer` reassignment or resizing anywhere in `src/` (grep for `.buffer =` and `new Uint8ClampedArray` outside `create.ts`/`engine.ts`) (depends on T017, T013)
+- [X] T022 [US4] Run `fnm env --shell fish | source; and fnm use 24; and npm run test:tick-bench`; fix failures. If the heap or time assertion fails and cannot be fixed without allocation or breaking a constitution principle, halt and flag it (Principle VI) (depends on T019, T020, T021)
 
 **Checkpoint**: Zero allocation and the 5 ms budget are proven with capture on.
 
@@ -129,8 +129,8 @@ description: "Task list for frame-capture"
 
 ### Tests for User Story 5
 
-- [ ] T023 [P] [US5] In `tests/unit/simulation-orchestrator/tick.test.ts` add tests: two engines with identical options and layers except `captureTargets` return byte-identical frames on every tick of a sequence, including with noise (use the same seed via `reseed`); the returned image and its `data` remain the same instances across calls and are not any target buffer; for `NaN`, `Infinity`, and `-Infinity`, `tick` throws `SimulationError` with reason `invalid-time` and each target's `buffer` (copied before), `headIndex`, `totalFramesRecorded`, and `isRecording` are unchanged (SC-005); pausing via `isRecording = false` leaves buffer and counters untouched across ticks and resuming writes at the same `headIndex` (US5/3); `engine.captureTargets`, each target, and each buffer are the same instances after many ticks (depends on T017)
-- [ ] T024 [US5] Run `fnm env --shell fish | source; and fnm use 24; and npx vitest run tests/unit/simulation-orchestrator` and fix failures (depends on T023)
+- [X] T023 [P] [US5] In `tests/unit/simulation-orchestrator/tick.test.ts` add tests: two engines with identical options and layers except `captureTargets` return byte-identical frames on every tick of a sequence, including with noise (use the same seed via `reseed`); the returned image and its `data` remain the same instances across calls and are not any target buffer; for `NaN`, `Infinity`, and `-Infinity`, `tick` throws `SimulationError` with reason `invalid-time` and each target's `buffer` (copied before), `headIndex`, `totalFramesRecorded`, and `isRecording` are unchanged (SC-005); pausing via `isRecording = false` leaves buffer and counters untouched across ticks and resuming writes at the same `headIndex` (US5/3); `engine.captureTargets`, each target, and each buffer are the same instances after many ticks (depends on T017)
+- [X] T024 [US5] Run `fnm env --shell fish | source; and fnm use 24; and npx vitest run tests/unit/simulation-orchestrator` and fix failures (depends on T023)
 
 **Checkpoint**: All five stories verified.
 
@@ -138,9 +138,9 @@ description: "Task list for frame-capture"
 
 ## Phase 8: Polish & Cross-Cutting
 
-- [ ] T025 Run full verification as separate commands: `fnm env --shell fish | source; and fnm use 24; and npm test`, `fnm env --shell fish | source; and fnm use 24; and npm run test:tick-bench`, `fnm env --shell fish | source; and fnm use 24; and npm run typecheck`, `fnm env --shell fish | source; and fnm use 24; and npm run lint`; all must pass with no semicolons, `any`, or `@ts-ignore` in changed files
-- [ ] T026 Walk through `quickstart.md` scenarios 1-13 against the passing tests and note any scenario without a covering test; add the missing test rather than skipping it
-- [ ] T027 Commit per constitution V with Conventional Commits under 50 characters, staging with `git add` as its own command and committing as its own command, in logical milestones: `feat: add frame capture targets`, then `test: bench frame capture`
+- [X] T025 Run full verification as separate commands: `fnm env --shell fish | source; and fnm use 24; and npm test`, `fnm env --shell fish | source; and fnm use 24; and npm run test:tick-bench`, `fnm env --shell fish | source; and fnm use 24; and npm run typecheck`, `fnm env --shell fish | source; and fnm use 24; and npm run lint`; all must pass with no semicolons, `any`, or `@ts-ignore` in changed files
+- [X] T026 Walk through `quickstart.md` scenarios 1-13 against the passing tests and note any scenario without a covering test; add the missing test rather than skipping it
+- [X] T027 Commit per constitution V with Conventional Commits under 50 characters, staging with `git add` as its own command and committing as its own command, in logical milestones: `feat: add frame capture targets`, then `test: bench frame capture`
 
 ---
 
