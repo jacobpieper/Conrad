@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte'
   import { expandGrayscale } from './expand'
+  import { fitScale } from './projection'
   import { ViewportError } from './types'
   import type { GrayscaleImage, PointerPayload, WindowPayload } from './types'
 
@@ -12,10 +13,16 @@
   }
 
   let { width, height, onpointer, onwindow }: Props = $props()
+  let container: HTMLDivElement
   let canvas: HTMLCanvasElement
+  let containerWidth = $state(0)
+  let containerHeight = $state(0)
   let context: CanvasRenderingContext2D | undefined
   let image: ImageData | undefined
   let pixels32: Uint32Array | undefined
+  let scale = $derived(fitScale(containerWidth, containerHeight, width, height))
+  let cssWidth = $derived(width * scale)
+  let cssHeight = $derived(height * scale)
 
   untrack(() => validateGrid(width, height))
 
@@ -43,6 +50,18 @@
     context = nextContext
     image = context.createImageData(width, height)
     pixels32 = new Uint32Array(image.data.buffer)
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (entry === undefined) return
+      const contentBox = entry.contentBoxSize[0]
+      if (contentBox === undefined) throw new Error('ResizeObserver entry has no content box')
+      containerWidth = contentBox.inlineSize
+      containerHeight = contentBox.blockSize
+    })
+    observer.observe(container)
+
+    return () => observer.disconnect()
   })
 
   export function render(frame: GrayscaleImage): void {
@@ -58,8 +77,8 @@
   }
 </script>
 
-<div class="viewport">
-  <canvas bind:this={canvas}></canvas>
+<div class="viewport" bind:this={container}>
+  <canvas bind:this={canvas} style:width="{cssWidth}px" style:height="{cssHeight}px"></canvas>
 </div>
 
 <style>
