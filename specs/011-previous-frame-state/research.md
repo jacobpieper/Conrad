@@ -44,6 +44,6 @@
 
 ## R8: Time budget
 
-- **Decision**: Keep the existing 5 ms per-tick assertion in `tick.bench.ts`; no new threshold.
-- **Rationale**: The 512x512 benchmark measured about 3.51 ms per tick. A 256 KB copy is tiny against that (native copy bandwidth is many GB/s), so the headroom to 5 ms is preserved. The benchmark remeasures with the copy included.
-- **Alternatives**: A separate micro-benchmark of the copy alone (added surface, same information).
+- **Decision**: Keep the existing 5 ms per-tick assertion and add a copy-only micro-benchmark with a 0.1 ms assertion in `tick.bench.ts`. Run the tick benchmark through `npm run test:tick-bench` with the dedicated single-worker configuration; the default parallel test suite excludes it.
+- **Rationale**: The copy-only measurement isolates the `.set()` cost; observed 512x512 copies take about 0.0035-0.0036 ms. The warmed, isolated full-tick benchmark measures about 3.37 ms, with the 5 ms acceptance threshold unchanged. Running it in isolation avoids contention from parallel unit files while keeping both time and heap gates.
+- **Alternatives**: Running the timing gate in the default parallel pool (contention caused an occasional result above 5 ms); removing the time limit (rejected because it weakens the stated budget).

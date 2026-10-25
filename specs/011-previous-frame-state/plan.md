@@ -6,7 +6,7 @@
 
 ## Summary
 
-Add one pre-allocated `previousFrame: Uint8ClampedArray` to the engine state, sized `width * height`. `createEngine` allocates it zero-filled once. At the end of `tick`, right after `updateBuffer`, the processed frame's bytes are copied into it with a single `previousFrame.set(processed.data)`. Because the copy is the last step, any stage running earlier in the next tick sees the previous tick's final frame. The buffer must be a real copy: `processFrame` reuses `noise.output.data` every tick, so aliasing it would show the current frame, not the previous one. The change touches three existing files in the orchestrator module and adds no files, no consumers, and no hooks.
+Add one pre-allocated `previousFrame: Uint8ClampedArray` to the engine state, sized `width * height`. `createEngine` allocates it zero-filled once. At the end of `tick`, right after `updateBuffer`, the processed frame's bytes are copied into it with a single `previousFrame.set(processed.data)`. Because the copy is the last step, any stage running earlier in the next tick sees the previous tick's final frame. The buffer must be a real copy: `processFrame` reuses `noise.output.data` every tick, so aliasing it would show the current frame, not the previous one. The engine change adds no consumer or hooks; benchmark validation adds `vitest.tick-bench.config.ts`, the `test:tick-bench` package script, and a default-suite exclusion so the strict timing gate runs in an isolated worker.
 
 ## Technical Context
 

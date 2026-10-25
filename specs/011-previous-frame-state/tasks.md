@@ -7,7 +7,7 @@ description: "Task list for previous-frame-state"
 
 **Input**: Design documents from `/specs/011-previous-frame-state/`
 
-**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/previous-frame-api.md, quickstart.md; modifies only `src/core/simulation-orchestrator/` (`types.ts`, `engine.ts`, `tick.ts`); all other core modules are unchanged.
+**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/previous-frame-api.md, quickstart.md; modifies `src/core/simulation-orchestrator/` (`types.ts`, `engine.ts`, `tick.ts`) and adds isolated benchmark configuration in `vitest.tick-bench.config.ts`, a `test:tick-bench` script in `package.json`, and an exclusion in `vitest.config.ts`; all other core modules are unchanged.
 
 **Tests**: Included. The spec (SC-001 to SC-004) and constitution Principle IV require vitest unit tests with real buffers (no mocks) and a benchmark proving zero JS heap allocation and the time budget for the hot-loop change.
 
@@ -25,7 +25,7 @@ description: "Task list for previous-frame-state"
 
 ## Phase 1: Setup
 
-No new dependencies, configuration, files in `src/`, or tooling are needed.
+No new dependencies are needed. The isolated time-sensitive benchmark uses `vitest.tick-bench.config.ts` and the `test:tick-bench` package script; no new files in `src/` are needed.
 
 ---
 
@@ -148,5 +148,5 @@ Task: "Audit previousFrame writers in src/core/simulation-orchestrator/tick.ts" 
 
 ## Phase 8: Convergence
 
-- [ ] T020 CRITICAL: Commit the completed T016-T019 work per Constitution V, staging with `git add` as its own command and committing as its own command, using Conventional Commits under 50 characters (for example `docs: align previous frame plan and tasks` for `specs/011-previous-frame-state/plan.md` and `tasks.md`, and `chore: tidy previous frame benchmark` for `src/core/simulation-orchestrator/types.ts` and `tests/unit/simulation-orchestrator/tick.bench.ts`); do not stage `.specify/memory/constitution.md` (contradicts)
-- [ ] T021 Reconcile stale statements with the current files per plan: Summary / Structure Decision and research R8: in `plan.md` Summary replace "adds no files" with a statement that the change adds only `vitest.tick-bench.config.ts` plus its script and exclusion; in `tasks.md` update the "Prerequisites" line and Phase 1 text, which still say no configuration or tooling is needed; in `research.md` R8 record that a copy-only micro-benchmark with a 0.1 ms assertion was added alongside the unchanged 5 ms tick assertion (contradicts)
+- [X] T020 Commit T016-T019 with Conventional Commits under 50 characters in `9f2891b` and `049c7af`; `.specify/memory/constitution.md` was not staged
+- [X] T021 Reconcile the plan Summary, task prerequisites and Phase 1 setup text, and research R8 with the existing isolated benchmark config, package script, exclusion, copy-only assertion, and unchanged 5 ms tick gate
