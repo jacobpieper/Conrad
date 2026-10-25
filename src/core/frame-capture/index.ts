@@ -1,3 +1,4 @@
+export { captureFrame } from './capture'
 export { createCaptureTargets } from './create'
 export { CaptureError } from './types'
 export type {

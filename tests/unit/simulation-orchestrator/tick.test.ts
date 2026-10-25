@@ -9,8 +9,16 @@ import type { EngineState } from '../../../src/core/simulation-orchestrator'
 
 const engines: EngineState[] = []
 
-async function makeEngine(maxLayers = 2): Promise<EngineState> {
-  const engine = await createEngine({ width: 4, height: 1, maxLayers })
+async function makeEngine(
+  maxLayers = 2,
+  captureTargets?: Parameters<typeof createEngine>[0]['captureTargets']
+): Promise<EngineState> {
+  const engine = await createEngine({
+    width: 4,
+    height: 1,
+    maxLayers,
+    ...(captureTargets === undefined ? {} : { captureTargets })
+  })
   engines.push(engine)
   return engine
 }
@@ -87,6 +95,55 @@ describe('simulation orchestrator tick', () => {
     expect(previousFrame).toBe(engine.previousFrame)
     expect(Array.from(tick(engine, 0).data)).toEqual([0, 0, 0, 0])
     expect(Array.from(previousFrame)).toEqual([0, 0, 0, 0])
+  })
+
+  it('captures final frames into stop and loop targets', async () => {
+    const engine = await makeEngine(1, [
+      { id: 'first', maxCapacity: 2, mode: 'stop' },
+      { id: 'last', maxCapacity: 2, mode: 'loop' }
+    ])
+    const layerId = registerLayer(engine.compositor, Uint8Array.from([0, 100, 200, 250]), 1)
+    addTemporalTrack(engine.temporal, layerId, [0, 1000], [0, 1])
+    const stop = engine.captureTargets[0]
+    const loop = engine.captureTargets[1]
+    expect(stop).toBeDefined()
+    expect(loop).toBeDefined()
+    if (stop === undefined || loop === undefined) return
+
+    const frameA = tick(engine, 0)
+    const frameB = tick(engine, 500)
+    const frameC = tick(engine, 1000)
+
+    expect(Array.from(stop.buffer)).toEqual([0, 0, 0, 0, 0, 50, 100, 125])
+    expect(Array.from(stop.buffer.subarray(0, 4))).toEqual([0, 0, 0, 0])
+    expect(Array.from(stop.buffer.subarray(4, 8))).toEqual([0, 50, 100, 125])
+    expect(stop.headIndex).toBe(2)
+    expect(stop.totalFramesRecorded).toBe(2)
+    expect(stop.isRecording).toBe(false)
+
+    expect(Array.from(loop.buffer.subarray(0, 4))).toEqual([0, 100, 200, 250])
+    expect(Array.from(loop.buffer.subarray(4, 8))).toEqual([0, 50, 100, 125])
+    expect(loop.headIndex).toBe(1)
+    expect(loop.totalFramesRecorded).toBe(3)
+    expect(loop.isRecording).toBe(true)
+  })
+
+  it('captures the final noisy and windowed frame', async () => {
+    const engine = await makeEngine(1, [
+      { id: 'final-output', maxCapacity: 2, mode: 'stop' }
+    ])
+    registerLayer(engine.compositor, Uint8Array.from([20, 80, 140, 220]), 1)
+    setWindowLevel(engine.noise, 100, 100)
+    setDose(engine.noise, 500)
+    reseed(engine.noise, 2024)
+
+    const result = tick(engine, 0)
+    const target = engine.captureTargets[0]
+    expect(target).toBeDefined()
+    if (target === undefined) return
+
+    expect(Array.from(target.buffer.subarray(0, 4))).toEqual(Array.from(result.data))
+    expect(Array.from(target.buffer.subarray(0, 4))).toEqual(Array.from(engine.previousFrame))
   })
 
   it('evaluates a kinematic track without a temporal track', async () => {

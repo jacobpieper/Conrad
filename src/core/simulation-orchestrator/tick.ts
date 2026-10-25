@@ -1,4 +1,5 @@
 import { compose } from '../compositor-core'
+import { captureFrame } from '../frame-capture'
 import { updateBuffer } from '../headless-renderer'
 import { evaluateMotion } from '../kinematic-controller'
 import { processFrame } from '../noise-controller'
@@ -17,5 +18,6 @@ export function tick(engine: EngineState, timeMs: number): GrayscaleImage {
   const processed = processFrame(engine.noise, composed)
   updateBuffer(engine.renderer, processed)
   engine.previousFrame.set(processed.data)
+  captureFrame(engine.captureTargets, processed.data)
   return processed
 }
