@@ -7,7 +7,10 @@ export default defineConfig({
   plugins: [svelte({ configFile: false })],
   test: {
     include: ['tests/unit/**/*.{test,bench}.ts'],
-    exclude: ['tests/unit/simulation-orchestrator/tick.bench.ts'],
+    exclude: [
+      'tests/unit/simulation-orchestrator/tick.bench.ts',
+      'tests/unit/viewport/render.bench.ts'
+    ],
     globalSetup: ['tests/setup/cross-origin-server.ts'],
     browser: {
       enabled: true,

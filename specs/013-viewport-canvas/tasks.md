@@ -219,3 +219,9 @@ Task: "Create the src/routes skeleton" (T005)
 - [X] T044 LOW: Added a mixed-button windowing test; left down/up does not route to the pointer callback or alter nonzero middle-drag deltas. Windowing suite passes.
 - [X] T045 LOW: Removed both type assertions in `boundary.test.ts`; raw globs now infer their string values without casts.
 - [X] T046 LOW: Removed the unrequested `.prettierignore`; existing ignore rules and tool defaults cover this project.
+
+---
+
+## Phase 10: Convergence
+
+- [X] T047 HIGH: Exclude `tests/unit/viewport/render.bench.ts` from the default parallel pool and run it via `vitest.viewport-render-bench.config.ts` with one worker, the Svelte compiler plugin, and `npm run test:viewport-render-bench`. Both render timing and heap checks pass in isolation; `npm test` passed three consecutive runs (38 files, 322 tests each). Typecheck, lint, and Svelte diagnostics pass. (SC-005; plan: time-sensitive benchmarks stay out of the parallel pool)
