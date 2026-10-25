@@ -22,6 +22,7 @@ export type EngineState = {
   kinematic: KinematicState
   noise: NoiseState
   renderer: RendererState
+  // width * height bytes; holds the previous tick's final frame
   previousFrame: Uint8ClampedArray
 }
 
