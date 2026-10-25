@@ -16,5 +16,6 @@ export function tick(engine: EngineState, timeMs: number): GrayscaleImage {
   const composed = compose(engine.compositor)
   const processed = processFrame(engine.noise, composed)
   updateBuffer(engine.renderer, processed)
+  engine.previousFrame.set(processed.data)
   return processed
 }

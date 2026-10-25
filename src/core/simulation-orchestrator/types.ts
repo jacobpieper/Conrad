@@ -22,6 +22,7 @@ export type EngineState = {
   kinematic: KinematicState
   noise: NoiseState
   renderer: RendererState
+  previousFrame: Uint8ClampedArray
 }
 
 export type SimulationErrorReason = 'invalid-time'

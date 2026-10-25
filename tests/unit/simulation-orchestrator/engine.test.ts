@@ -40,6 +40,10 @@ describe('simulation orchestrator engine', () => {
     expect(engine.noise.width).toBe(4)
     expect(engine.noise.height).toBe(2)
     expect(engine.noise.pixelCount).toBe(8)
+    expect(engine.previousFrame).toBeInstanceOf(Uint8ClampedArray)
+    expect(engine.previousFrame.length).toBe(engine.noise.pixelCount)
+    expect(Array.from(engine.previousFrame)).toEqual(new Array(8).fill(0))
+    expect(engine.previousFrame).not.toBe(engine.noise.output.data)
     expect(engine.renderer.viewport).toEqual({ width: 4, height: 2 })
   })
 
@@ -60,6 +64,7 @@ describe('simulation orchestrator engine', () => {
     expect(engine.temporal.maxKeyframes).toBe(5)
     expect(engine.kinematic.maxKeyframes).toBe(5)
     expect(engine.renderer.viewport).toEqual({ width: 8, height: 6 })
+    expect(engine.previousFrame.length).toBe(8)
     expect(engine.noise.window).toBe(100)
     expect(engine.noise.level).toBe(90)
     expect(engine.noise.dose).toBe(500)
@@ -75,6 +80,7 @@ describe('simulation orchestrator engine', () => {
     expect(first.kinematic).not.toBe(second.kinematic)
     expect(first.noise).not.toBe(second.noise)
     expect(first.renderer).not.toBe(second.renderer)
+    expect(first.previousFrame).not.toBe(second.previousFrame)
   })
 
   it('creates only the renderer surface and destroys its resources', async () => {

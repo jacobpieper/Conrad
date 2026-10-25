@@ -31,11 +31,14 @@ describe('simulation orchestrator tick', () => {
 
     const first = tick(engine, 0)
     const data = first.data
+    const previousFrame = engine.previousFrame
     const rendered = new Uint8Array(16)
     await readSurface(engine.renderer, rendered)
 
     expect(Array.from(first.data)).toEqual([0, 100, 200, 250])
     expect(first).toBe(engine.noise.output)
+    expect(engine.previousFrame).toBe(previousFrame)
+    expect(Array.from(engine.previousFrame)).toEqual(Array.from(first.data))
     expect(rendered).toEqual(Uint8Array.from([
       0, 0, 0, 255,
       100, 100, 100, 255,
@@ -44,6 +47,7 @@ describe('simulation orchestrator tick', () => {
     ]))
     expect(tick(engine, 0)).toBe(first)
     expect(first.data).toBe(data)
+    expect(engine.previousFrame).toBe(previousFrame)
   })
 
   it('evaluates temporal and kinematic tracks at the same global time', async () => {
@@ -67,10 +71,22 @@ describe('simulation orchestrator tick', () => {
     const engine = await makeEngine(1)
     const layerId = registerLayer(engine.compositor, Uint8Array.from([0, 100, 200, 250]), 1)
     addTemporalTrack(engine.temporal, layerId, [0, 1000], [0, 1])
+    const previousFrame = engine.previousFrame
 
-    expect(Array.from(tick(engine, 0).data)).toEqual([0, 0, 0, 0])
-    expect(Array.from(tick(engine, 500).data)).toEqual([0, 50, 100, 125])
+    expect(Array.from(previousFrame)).toEqual([0, 0, 0, 0])
+    expect(previousFrame).not.toBe(engine.noise.output.data)
+
+    const first = tick(engine, 500)
+    expect(Array.from(previousFrame)).toEqual([0, 50, 100, 125])
+    expect(Array.from(previousFrame)).toEqual(Array.from(first.data))
+
+    const previousSnapshot = Array.from(previousFrame)
+    expect(previousSnapshot).toEqual([0, 50, 100, 125])
     expect(Array.from(tick(engine, 1000).data)).toEqual([0, 100, 200, 250])
+    expect(Array.from(previousFrame)).toEqual([0, 100, 200, 250])
+    expect(previousFrame).toBe(engine.previousFrame)
+    expect(Array.from(tick(engine, 0).data)).toEqual([0, 0, 0, 0])
+    expect(Array.from(previousFrame)).toEqual([0, 0, 0, 0])
   })
 
   it('evaluates a kinematic track without a temporal track', async () => {
@@ -183,6 +199,7 @@ describe('simulation orchestrator tick', () => {
     const offsetsX = Array.from(engine.compositor.offsetsX)
     const offsetsY = Array.from(engine.compositor.offsetsY)
     const output = Array.from(engine.noise.output.data)
+    const previousFrame = Array.from(engine.previousFrame)
 
     for (const timeMs of [NaN, Infinity, -Infinity]) {
       let thrown: unknown
@@ -197,6 +214,7 @@ describe('simulation orchestrator tick', () => {
       expect(Array.from(engine.compositor.offsetsX)).toEqual(offsetsX)
       expect(Array.from(engine.compositor.offsetsY)).toEqual(offsetsY)
       expect(Array.from(engine.noise.output.data)).toEqual(output)
+      expect(Array.from(engine.previousFrame)).toEqual(previousFrame)
     }
   })
 
@@ -217,7 +235,9 @@ describe('simulation orchestrator tick', () => {
 
     const target = new OffscreenCanvas(4, 1)
     bindTarget(engine.renderer, target)
-    expect(Array.from(tick(engine, 0).data)).toEqual(expected)
+    const processed = tick(engine, 0)
+    expect(Array.from(processed.data)).toEqual(expected)
+    expect(Array.from(engine.previousFrame)).toEqual(expected)
     const context = target.getContext('2d')
     expect(context).not.toBeNull()
     const targetPixels = context?.getImageData(0, 0, 4, 1).data

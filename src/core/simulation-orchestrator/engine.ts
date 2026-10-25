@@ -14,12 +14,13 @@ export async function createEngine(options: EngineOptions): Promise<EngineState>
   const temporal = createTemporalController(compositor, maxTracks, maxKeyframes)
   const kinematic = createKinematicController(compositor, maxTracks, maxKeyframes)
   const noise = createNoiseController(options.width, options.height, options.noise)
+  const previousFrame = new Uint8ClampedArray(noise.pixelCount)
   const renderer = await createRenderer(
     options.viewportWidth ?? options.width,
     options.viewportHeight ?? options.height
   )
 
-  return { compositor, temporal, kinematic, noise, renderer }
+  return { compositor, temporal, kinematic, noise, renderer, previousFrame }
 }
 
 export function destroyEngine(engine: EngineState): void {
