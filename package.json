@@ -9,6 +9,7 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:tick-bench": "vitest run --config vitest.tick-bench.config.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },

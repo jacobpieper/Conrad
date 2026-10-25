@@ -52,14 +52,36 @@ describe('simulation orchestrator tick benchmark', () => {
     destroyEngine(engine)
   })
 
+  it('copies a 512x512 frame with set in under 0.1ms', () => {
+    const source = new Uint8ClampedArray(512 * 512)
+    const destination = new Uint8ClampedArray(512 * 512)
+    for (let iteration = 0; iteration < 100; iteration++) destination.set(source)
+
+    const iterations = 1000
+    const start = performance.now()
+    for (let iteration = 0; iteration < iterations; iteration++) destination.set(source)
+    const perCopy = (performance.now() - start) / iterations
+
+    expect(destination.length).toBe(source.length)
+    expect(perCopy).toBeLessThan(0.1)
+    console.info(`512x512 Uint8ClampedArray.set: ${perCopy.toFixed(4)}ms per copy`)
+  })
+
   it('ticks a noisy 512x512 frame within the time budget', () => {
-    const iterations = 20
+    for (let iteration = 0; iteration < 50; iteration++) tick(engine, (iteration * 50) % 1001)
+    const iterations = 100
     const start = performance.now()
     for (let iteration = 0; iteration < iterations; iteration++) {
       tick(engine, (iteration * 50) % 1001)
     }
     const perTick = (performance.now() - start) / iterations
-    // Measured ~3.51ms per tick; 5ms leaves headroom for slower CI machines.
+    let mismatches = 0
+    for (let index = 0; index < engine.previousFrame.length; index++) {
+      if (engine.previousFrame[index] !== engine.noise.output.data[index]) mismatches++
+    }
+
+    expect(mismatches).toBe(0)
+    // Isolated warmed ticks measured 3.37ms; 5ms leaves headroom for slower CI machines.
     expect(perTick).toBeLessThan(5)
   })
 
@@ -84,6 +106,7 @@ describe('simulation orchestrator tick benchmark', () => {
     const kinematic = engine.kinematic
     const noise = engine.noise
     const renderer = engine.renderer
+    const previousFrame = engine.previousFrame
 
     for (let iteration = 0; iteration < 20; iteration++) {
       expect(tick(engine, iteration * 25)).toBe(output)
@@ -93,6 +116,7 @@ describe('simulation orchestrator tick benchmark', () => {
       expect(engine.kinematic).toBe(kinematic)
       expect(engine.noise).toBe(noise)
       expect(engine.renderer).toBe(renderer)
+      expect(engine.previousFrame).toBe(previousFrame)
     }
   })
 })
